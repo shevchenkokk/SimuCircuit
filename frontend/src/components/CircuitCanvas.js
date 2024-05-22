@@ -50,7 +50,6 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
     function drawComponent(context, component, x, y, opacity=1, rotation=0, isSelected=false) {
         getOrLoadImage(component.image, (img) => {
-            img.src = component.image;
             context.save();
             context.globalAlpha = opacity;
             context.translate(x, y);  // Перемещаем контекст в центр элемента
