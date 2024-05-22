@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import logoImage from './assets/images/logo.svg';
 
 function App() {
-    const [selectedComponent, setSelectedComponent] = useState('');
+    const [selectedComponentFromSidebar, setSelectedComponentFromSidebar] = useState('');
 
     return (
         <div className="App">
@@ -14,8 +14,8 @@ function App() {
                 <img src={logoImage} alt="Логотип" className="App-logo" /> {/* Класс для стилизации */}
             </header>
             <div className="App-content">
-                <Sidebar onSelectComponent={setSelectedComponent} />
-                <CircuitCanvas selectedComponent={selectedComponent} />
+                <Sidebar onSelectComponent={setSelectedComponentFromSidebar} />
+                <CircuitCanvas selectedComponentFromSidebar={selectedComponentFromSidebar} setSelectedComponentFromSidebar={setSelectedComponentFromSidebar}/>
             </div>
         </div>
     );

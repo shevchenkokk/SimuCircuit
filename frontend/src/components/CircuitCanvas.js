@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { componentsList } from '../components';
 
-function CircuitCanvas({ selectedComponent }) {
+function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar }) {
     const canvasRef = useRef(null);
     // Состояние для хранения текущих координат курсора
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
@@ -11,6 +11,8 @@ function CircuitCanvas({ selectedComponent }) {
     const [preview, setPreview] = useState(null);
     // Состояние для хранения информации о текущем угле поворота выбранного элемента
     const [rotation, setRotation] = useState(0);
+    // Состояние для хранения информации о текущем выделенном на холсте элементе
+    const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
 
     function drawGrid(context, color, stepx, stepy) {
         context.strokeStyle = color;
@@ -31,7 +33,7 @@ function CircuitCanvas({ selectedComponent }) {
         }
     }
 
-    function drawComponent(context, component, x, y, opacity=1, rotation=0) {
+    function drawComponent(context, component, x, y, opacity=1, rotation=0, isSelected=false) {
         const img = new Image();
         img.src = component.image;
         img.onload = () => {
@@ -39,12 +41,16 @@ function CircuitCanvas({ selectedComponent }) {
             context.globalAlpha = opacity;
             context.translate(x, y);  // Перемещаем контекст в центр элемента
             context.rotate((rotation * Math.PI) / 180); // Вращаем контекст на угол в радианах
+            if (isSelected) {
+                context.strokeStyle = 'red'; // Выделение компоненты красным цветом при нажатии
+                context.lineWidth = 2;
+                context.strokeRect(-component.width / 2, -component.height / 2, component.width, component.height);
+            }
             context.drawImage(img, - component.width / 2, - component.height / 2, component.width, component.height);
-            context.globalAlpha = 1;
             context.restore();
         };
     }
-    
+
     function handleResize() {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
@@ -64,9 +70,9 @@ function CircuitCanvas({ selectedComponent }) {
         context.fillStyle = 'black';
         context.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid(context, 'rgba(128, 128, 128, 0.5)', 25, 25);
-        elements.forEach(element => {
+        elements.forEach((element, index) => {
             const component = componentsList[element.type];
-            drawComponent(context, component, element.x, element.y, 1, element.rotation);
+            drawComponent(context, component, element.x, element.y, 1, element.rotation, index === selectedComponentIndex);
         });
         if (preview) {
             const component = componentsList[preview.type];
@@ -75,21 +81,42 @@ function CircuitCanvas({ selectedComponent }) {
     }
 
     function handleClick(e) {
-        // Если компонент не выбран, ничего не делаем
-        if (!selectedComponent) return;
-
         const rect = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        const newElement = { type: selectedComponent, x: x, y: y, rotation: rotation }; // По умолчанию добавляем резистор
-        setElements(prevElements => [...prevElements, newElement]);
-        setPreview(null);
-        setRotation(0);
+        
+        if (selectedComponentFromSidebar) {
+            const newElement = {
+                type: selectedComponentFromSidebar,
+                x: x,
+                y: y,
+                rotation: rotation,
+            }; // По умолчанию добавляем резистор
+            setElements(prevElements => [...prevElements, newElement]);
+            setSelectedComponentFromSidebar(null);
+            setPreview(null);
+            setRotation(0);
+            return;
+        }
+
+        let isComponentClicked = false;
+        elements.forEach((element, index) => {
+            const component = componentsList[element.type];
+            if (x >= element.x - component.width / 2 && x <= element.x + component.width / 2 &&
+                y >= element.y - component.height / 2 && y <= element.y + component.height / 2) {
+                isComponentClicked = true;
+                setSelectedComponentIndex(index);
+            }
+        });
+
+        if (!isComponentClicked) {
+            setSelectedComponentIndex(null);
+        }
     }
 
     function handleMouseMove(e) {
-        if (!selectedComponent) return;  // Активируем предпросмотр только если выбран компонент
-    
+        if (!selectedComponentFromSidebar) return;  // Активируем предпросмотр только если выбран компонент из левой панели
+
         const rect = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
@@ -97,7 +124,7 @@ function CircuitCanvas({ selectedComponent }) {
         setCursorPosition({ x, y });
 
         setPreview({
-            type: selectedComponent,
+            type: selectedComponentFromSidebar,
             x: x,
             y: y,
             rotation: rotation
@@ -110,13 +137,13 @@ function CircuitCanvas({ selectedComponent }) {
 
     function handleKeyDown(e) {
         // Если компонент не выбран, ничего не делаем
-        if (!selectedComponent || !cursorPosition) return;
+        if (!selectedComponentFromSidebar || !cursorPosition) return;
 
         const updateRotation = (newRotation) => {
             setRotation(newRotation);
     
             setPreview({
-                type: selectedComponent,
+                type: selectedComponentFromSidebar,
                 x: cursorPosition.x,
                 y: cursorPosition.y,
                 rotation: newRotation
@@ -124,7 +151,7 @@ function CircuitCanvas({ selectedComponent }) {
         };
 
         // Управление углом поворота с клавиатуры
-        if (e.key === 'r' || e.key == 'R') {
+        if (e.key === 'r' || e.key === 'R') {
             updateRotation((rotation + 45) % 360);  // Поворот на 10 градусов вправо
         }
     }
@@ -145,7 +172,7 @@ function CircuitCanvas({ selectedComponent }) {
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [elements, preview, rotation, selectedComponent]);
+    }, [elements, preview, rotation, selectedComponentFromSidebar, selectedComponentIndex]);
 
     return <canvas ref={canvasRef} style={{width: '100%', height: '100%' }}></canvas>;
 }
