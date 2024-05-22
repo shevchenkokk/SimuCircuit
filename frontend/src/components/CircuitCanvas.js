@@ -3,6 +3,8 @@ import { componentsList } from '../components';
 
 function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar }) {
     const canvasRef = useRef(null);
+    // Состояние для кэширования изображений
+    const images = useRef({});
     // Состояние для хранения текущих координат курсора
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
     // Состояние для хранения информации о текущих элементах и выбранном элементе
@@ -33,22 +35,34 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         }
     }
 
+    function getOrLoadImage(src, callback) {
+        if (images.current[src]) {
+            callback(images.current[src]);
+        } else {
+            const img = new Image();
+            img.onload = () => {
+                images.current[src] = img;
+                callback(img);
+            };
+            img.src = src;
+        }
+    }
+
     function drawComponent(context, component, x, y, opacity=1, rotation=0, isSelected=false) {
-        const img = new Image();
-        img.src = component.image;
-        img.onload = () => {
+        getOrLoadImage(component.image, (img) => {
+            img.src = component.image;
             context.save();
             context.globalAlpha = opacity;
             context.translate(x, y);  // Перемещаем контекст в центр элемента
             context.rotate((rotation * Math.PI) / 180); // Вращаем контекст на угол в радианах
-            if (isSelected) {
+            if (isSelected) {                
                 context.strokeStyle = 'red'; // Выделение компоненты красным цветом при нажатии
                 context.lineWidth = 2;
                 context.strokeRect(-component.width / 2, -component.height / 2, component.width, component.height);
             }
             context.drawImage(img, - component.width / 2, - component.height / 2, component.width, component.height);
             context.restore();
-        };
+        });
     }
 
     function handleResize() {
