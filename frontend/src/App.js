@@ -14,8 +14,12 @@ function App() {
                 <img src={logoImage} alt="Логотип" className="App-logo" /> {/* Класс для стилизации */}
             </header>
             <div className="App-content">
-                <Sidebar onSelectComponent={setSelectedComponentFromSidebar} />
-                <CircuitCanvas selectedComponentFromSidebar={selectedComponentFromSidebar} setSelectedComponentFromSidebar={setSelectedComponentFromSidebar}/>
+                <div className="Sidebar">
+                    <Sidebar onSelectComponent={setSelectedComponentFromSidebar} />
+                </div>
+                <div className="CircuitCanvas">
+                    <CircuitCanvas selectedComponentFromSidebar={selectedComponentFromSidebar} setSelectedComponentFromSidebar={setSelectedComponentFromSidebar}/>
+                </div>
             </div>
         </div>
     );

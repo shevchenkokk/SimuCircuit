@@ -1,7 +1,7 @@
 .sidebar {
     width: 75px; /* Уменьшенная ширина для минималистичного вида */
     height: 100vh;
-    position: fixed;
+    position: flex;
     top: 50px;
     left: 0;
     background: linear-gradient( rgb(13, 13, 13) 0%, rgb(27, 26, 26) 50%, rgb(14, 14, 14) 100%); /* Градиент от темно-серого к более светлому и обратно */
