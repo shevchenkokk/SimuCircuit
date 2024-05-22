@@ -95,8 +95,14 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
     function handleClick(e) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const rawX = e.clientX - rect.left;
+        const rawY = e.clientY - rect.top;
+
+        const gridCellSize = 25; // Размер ячейки сетки
+
+        // Округление координат для выравнивания элемента по сетке
+        const x = Math.round(rawX / gridCellSize) * gridCellSize;
+        const y = Math.round(rawY / gridCellSize) * gridCellSize;
         
         if (selectedComponentFromSidebar) {
             const newElement = {
