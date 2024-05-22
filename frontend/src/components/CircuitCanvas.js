@@ -15,6 +15,12 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     const [rotation, setRotation] = useState(0);
     // Состояние для хранения информации о текущем выделенном на холсте элементе
     const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
+    // Состояние для хранения информации о факте перемещения элемента
+    const [isDragging, setIsDragging] = useState(false);
+    // Состояние для хранения информации о перемещаемом элементе
+    const [draggedElementIndex, setDraggedElementIndex] = useState(null);
+    // Состояние для хранения информации о сдвиге при перемещении
+    const [dragOffset, setDragOffset] = useState({x: 0, y: 0});
 
     function drawGrid(context, color, stepx, stepy) {
         context.strokeStyle = color;
@@ -59,7 +65,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 context.lineWidth = 2;
                 context.strokeRect(-component.width / 2, -component.height / 2, component.width, component.height);
             }
-            context.drawImage(img, - component.width / 2, - component.height / 2, component.width, component.height);
+            context.drawImage(img, -component.width / 2, - component.height / 2, component.width, component.height);
             context.restore();
         });
     }
@@ -133,21 +139,64 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         }
     }
 
-    function handleMouseMove(e) {
-        if (!selectedComponentFromSidebar) return;  // Активируем предпросмотр только если выбран компонент из левой панели
-
+    function handleMouseDown(e) {
         const rect = canvasRef.current.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
 
+        elements.forEach((element, index) => {
+            const component = componentsList[element.type];
+            if (x >= element.x - component.width / 2 && x <= element.x + component.width / 2 &&
+                y >= element.y - component.height / 2 && y <= element.y + component.height / 2) {
+                setIsDragging(true);
+                setDraggedElementIndex(index);
+                setDragOffset({ x: x - element.x, y: y - element.y });
+                setSelectedComponentIndex(index);
+            }
+        });
+    }
+
+    function handleMouseMove(e) {
+        if (!selectedComponentFromSidebar && !isDragging && draggedElementIndex == null) return;
+
+        const rect = canvasRef.current.getBoundingClientRect();
+        // Обновление координат курсора относительно холста с учётом смещения между точкой клика и положением элемента
+        const x = e.clientX - rect.left - dragOffset.x;
+        const y = e.clientY - rect.top - dragOffset.y;
+
         setCursorPosition({ x, y });
 
-        setPreview({
-            type: selectedComponentFromSidebar,
-            x: x,
-            y: y,
-            rotation: rotation
-        });
+         // Активируем предпросмотр только если выбран компонент из левой панели
+        if (selectedComponentFromSidebar) {
+            setPreview({
+                type: selectedComponentFromSidebar,
+                x: x,
+                y: y,
+                rotation: rotation
+            });
+        } else if (isDragging) {
+            setElements(prevElements => prevElements.map((element, index) =>
+                index === draggedElementIndex ? { ...element, x: x, y: y } : element
+            ));
+        } 
+    }
+
+    function handleMouseUp() {
+        if (isDragging && draggedElementIndex !== null) {
+            const gridCellSize = 25; // Размер ячейки сетки, по которому производим выравнивание
+            setElements(prevElements => prevElements.map((element, index) => {
+                if (index === draggedElementIndex) {
+                    const roundedX = Math.round(element.x / gridCellSize) * gridCellSize;
+                    const roundedY = Math.round(element.y / gridCellSize) * gridCellSize;
+                    return { ...element, x: roundedX, y: roundedY };
+                }
+                return element;
+            }));
+        }
+
+        setIsDragging(false);
+        setDraggedElementIndex(null);
+        setDragOffset({ x: 0, y: 0 });
     }
 
     function clearPreview() {
@@ -180,20 +229,26 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         const canvas = canvasRef.current;
         window.addEventListener('resize', handleResize);
         canvas.addEventListener('click', handleClick);
+        canvas.addEventListener('mousedown', handleMouseDown);
         canvas.addEventListener('mousemove', handleMouseMove);
+        canvas.addEventListener('mouseup', handleMouseUp);
         canvas.addEventListener('mouseleave', clearPreview);
         window.addEventListener('keydown', handleKeyDown);
 
         return () => {
             window.removeEventListener('resize', handleResize);
             canvas.removeEventListener('click', handleClick);
+            canvas.removeEventListener('mousedown', handleMouseDown);
             canvas.removeEventListener('mousemove', handleMouseMove);
+            canvas.removeEventListener('mouseup', handleMouseUp);
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [elements, preview, rotation, selectedComponentFromSidebar, selectedComponentIndex]);
+    }, [elements, preview, rotation, selectedComponentFromSidebar, selectedComponentIndex,
+        isDragging, draggedElementIndex, dragOffset
+    ]);
 
-    return <canvas ref={canvasRef} style={{width: '100%', height: '100%' }}></canvas>;
+    return <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}></canvas>;
 }
 
 export default CircuitCanvas;
