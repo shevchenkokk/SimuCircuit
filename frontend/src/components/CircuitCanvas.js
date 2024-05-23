@@ -11,8 +11,6 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     const [elements, setElements] = useState([]);
     // Состояние для хранения информации о текущем положении курсора и выбранном элементе для предпросмотра.
     const [preview, setPreview] = useState(null);
-    // Состояние для хранения информации о текущем угле поворота выбранного элемента
-    const [rotation, setRotation] = useState(0);
     // Состояние для хранения информации о текущем элементе, на который наведена мышь
     const [hoveredComponentIndex, setHoveredComponentIndex] = useState(null);
     // Состояние для хранения информации о текущем выделенном на холсте элементе
@@ -85,19 +83,9 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         context.beginPath();
         context.moveTo(wire.startX, wire.startY);
         context.lineTo(wire.endX, wire.endY);
-        context.strokeStyle = 'white';
+        context.strokeStyle = isSelected ? 'turquoise' : 'white';
         context.lineWidth = 3;
         context.stroke();
-
-        if (isSelected) {
-            context.strokeStyle = 'turquoise';
-            context.lineWidth = 2;
-            const rectX = Math.min(wire.startX, wire.endX);
-            const rectY = Math.min(wire.startY, wire.endY);
-            const rectWidth = Math.abs(wire.endX - wire.startX);
-            const rectHeight = Math.abs(wire.endY - wire.startY);
-            context.strokeRect(rectX, rectY - 2, rectWidth, rectHeight + 4);
-        }
     }
 
     // Получение соединительных точек элемента
@@ -111,8 +99,6 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
     // Рисование соединительных точек элемента
     function drawConnectionPoints(context, element) {
-        const radians = (rotation * Math.PI) / 180;
-
         // Левая точка
         const points = [
             {
@@ -124,11 +110,8 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         ];
 
         points.forEach(point => {
-            const rotatedX = point.x * Math.cos(radians) - point.y * Math.sin(radians);
-            const rotatedY = point.x * Math.sin(radians) + point.y * Math.cos(radians);
-
             context.beginPath();
-            context.arc(rotatedX, rotatedY, 4, 0, 2 * Math.PI);
+            context.arc(point.x, point.y, 4, 0, 2 * Math.PI);
             context.fillStyle = 'turquoise';
             context.fill();
             context.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -192,12 +175,11 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 type: selectedComponentFromSidebar,
                 x: x,
                 y: y,
-                rotation: rotation,
+                rotation: preview.rotation,
             }; // По умолчанию добавляем резистор
             setElements(prevElements => [...prevElements, newElement]);
             setSelectedComponentFromSidebar(null);
             setPreview(null);
-            setRotation(0);
             return;
         }
 
@@ -230,17 +212,17 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
     function handleMouseDown(e) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const rawX = e.clientX - rect.left;
-        const rawY = e.clientY - rect.top;
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
 
          // Округление координат для выравнивания элемента по сетке
          const gridCellSize = 25;
-         const x = Math.round(rawX / gridCellSize) * gridCellSize;
-         const y = Math.round(rawY / gridCellSize) * gridCellSize;
+         const roundedX = Math.round(x / gridCellSize) * gridCellSize;
+         const roundedY = Math.round(y / gridCellSize) * gridCellSize;
 
         if (selectedComponentFromSidebar === 'wire') {
             setIsDrawingWire(true);
-            setCurrentWire({ startX: x, startY: y, endX: x, endY: y })
+            setCurrentWire({ startX: roundedX, startY: roundedY, endX: roundedX, endY: roundedY })
             setSelectedComponentFromSidebar(null);
             return;
         }
@@ -254,7 +236,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 const rectY = Math.min(element.startY, element.endY);
                 const rectWidth = Math.abs(element.endX - element.startX);
                 const rectHeight = Math.abs(element.endY - element.startY);
-                if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y <= rectY + rectHeight) {
+                if (roundedX >= rectX && roundedX <= rectX + rectWidth && roundedY >= rectY && roundedY <= rectY + rectHeight) {
                     setIsDragging(true);
                     setDraggedElementIndex(index);
                     setDragOffset({ x: x - element.startX, y: y - element.startY });  // Смещение относительно начальной точки провода
@@ -340,7 +322,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 type: selectedComponentFromSidebar,
                 x: x,
                 y: y,
-                rotation: rotation
+                rotation: preview ? preview.rotation : 0
             });
         } else if (isDragging) {
             const element = elements[draggedElementIndex];
@@ -417,24 +399,29 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         setPreview(null);  // Очищаем предпросмотр, когда мышь уходит с канваса
     }
 
+    // Обработка нажатий на клавиши
     function handleKeyDown(e) {
-        // Если компонент не выбран, ничего не делаем
-        if (!selectedComponentFromSidebar || !cursorPosition) return;
-
-        const updateRotation = (newRotation) => {
-            setRotation(newRotation);
-    
-            setPreview({
-                type: selectedComponentFromSidebar,
-                x: cursorPosition.x,
-                y: cursorPosition.y,
-                rotation: newRotation
-            });
-        };
+        if (!cursorPosition) return;
 
         // Управление углом поворота с клавиатуры
         if (e.key === 'r' || e.key === 'R') {
-            updateRotation((rotation + 45) % 360);  // Поворот на 10 градусов вправо
+            if (selectedComponentFromSidebar && preview) {
+                const newRotation = (preview.rotation + 45) % 360;
+                setPreview({
+                    type: selectedComponentFromSidebar,
+                    x: cursorPosition.x,
+                    y: cursorPosition.y,
+                    rotation: newRotation
+                });
+            } else if (selectedComponentIndex !== null) {
+                setElements(prevElements => prevElements.map((element, index) => {
+                    if (index === selectedComponentIndex) {
+                        const newRotation = (element.rotation + 45) % 360;
+                        return { ...element, rotation: newRotation }
+                    }
+                    return element;
+                }));
+            }
         }
     }
 
@@ -458,7 +445,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [elements, preview, rotation, hoveredComponentIndex,
+    }, [elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
         isDrawingWire, currentWire
