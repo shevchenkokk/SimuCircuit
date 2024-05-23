@@ -423,6 +423,14 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 }));
             }
         }
+
+        // Удаление выбранного элемента
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+            if (selectedComponentIndex !== null) {
+                setElements(prevElements => prevElements.filter((_, index) => index !== selectedComponentIndex));
+                setSelectedComponentIndex(null); // Сбросить индекс выбранного элемента
+            }
+        } 
     }
 
     useEffect(() => {
