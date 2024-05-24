@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
+import './CircuitCanvas.css';
 import { componentsList } from '../components';
 
 function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar }) {
@@ -157,7 +158,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     function handleResize() {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
-        const context = canvas.getContext('2d');
+        const context = canvas.getContext('2d', { alpha: true, antialias: true });
         context.imageSmoothingEnabled = false;
         const scale = window.devicePixelRatio; // Учет плотности пикселей устройства
 
