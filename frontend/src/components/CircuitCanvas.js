@@ -86,6 +86,38 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         context.strokeStyle = isSelected ? 'turquoise' : 'white';
         context.lineWidth = 3;
         context.stroke();
+
+        if (isHovered) {
+            drawWireConnectionPoints(context, wire.startX, wire.startY);
+            drawWireConnectionPoints(context, wire.endX, wire.endY);
+        }
+    }
+
+    function drawWireConnectionPoints(context, x, y) {
+        context.beginPath();
+        context.arc(x, y, 4, 0, 2 * Math.PI);
+        context.fillStyle = 'turquoise';
+        context.fill();
+        context.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        context.shadowBlur = 5;
+        context.strokeStyle = 'white';
+        context.lineWidth = 1;
+        context.stroke();
+    }
+
+    // Функция для проверки близости точки к отрезку, учитывая порог eps
+    function isNearWire(px, py, x1, y1, x2, y2, eps) {
+        const L2 = (x2 - x1) ** 2 + (y2 - y1) ** 2;
+        if (L2 === 0) return false;
+
+        const t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / L2;
+        const tClamped = Math.max(0, Math.min(1, t));
+        const nearestX = x1 + tClamped * (x2 - x1);
+        const nearestY = y1 + tClamped * (y2 - y1);
+
+        const dx = nearestX - px;
+        const dy = nearestY - py;
+        return Math.sqrt(dx * dx + dy * dy) <= eps;
     }
 
     // Получение соединительных точек элемента
@@ -117,7 +149,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             context.shadowColor = 'rgba(0, 0, 0, 0.5)';
             context.shadowBlur = 5;
             context.strokeStyle = 'white';
-            context.lineWidth = 0.5;
+            context.lineWidth = 1;
             context.stroke();
         });
     }
@@ -186,14 +218,9 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         let isComponentClicked = false;
         elements.forEach((element, index) => {
             if (element.type === 'wire') {
-                const rectX = Math.min(element.startX, element.endX);
-                const rectY = Math.min(element.startY, element.endY);
-                const rectWidth = Math.abs(element.endX - element.startX);
-                const rectHeight = Math.abs(element.endY - element.startY);
-
-                if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y <= rectY + rectHeight) {
-                    setSelectedComponentIndex(index);
+                if (isNearWire(x, y, element.startX, element.startY, element.endX, element.endY, 8)) {
                     isComponentClicked = true;
+                    setSelectedComponentIndex(index);
                 }
             } else {
                 const component = componentsList[element.type];
@@ -232,11 +259,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             const component = componentsList[element.type];
             if (element.type === 'wire') {
                 // Проверка, попадает ли клик в область провода
-                const rectX = Math.min(element.startX, element.endX);
-                const rectY = Math.min(element.startY, element.endY);
-                const rectWidth = Math.abs(element.endX - element.startX);
-                const rectHeight = Math.abs(element.endY - element.startY);
-                if (roundedX >= rectX && roundedX <= rectX + rectWidth && roundedY >= rectY && roundedY <= rectY + rectHeight) {
+                if (isNearWire(roundedX, roundedY, element.startX, element.startY, element.endX, element.endY, 5)) {
                     setIsDragging(true);
                     setDraggedElementIndex(index);
                     setDragOffset({ x: x - element.startX, y: y - element.startY });  // Смещение относительно начальной точки провода
@@ -277,12 +300,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         let isComponentHovered = false;
         elements.forEach((element, index) => {
             if (element.type === 'wire') {
-                const rectX = Math.min(element.startX, element.endX);
-                const rectY = Math.min(element.startY, element.endY);
-                const rectWidth = Math.abs(element.endX - element.startX);
-                const rectHeight = Math.abs(element.endY - element.startY);
-
-                if (x >= rectX && x <= rectX + rectWidth && y >= rectY && y <= rectY + rectHeight) {
+                if (isNearWire(x, y, element.startX, element.startY, element.endX, element.endY, 8)) {
                     isComponentHovered = true;
                     setHoveredComponentIndex(index);
                 }
@@ -430,7 +448,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 setElements(prevElements => prevElements.filter((_, index) => index !== selectedComponentIndex));
                 setSelectedComponentIndex(null); // Сбросить индекс выбранного элемента
             }
-        } 
+        }
     }
 
     useEffect(() => {
