@@ -2,10 +2,8 @@ import React, { useRef, useEffect, useState } from 'react';
 import './CircuitCanvas.css';
 import { componentsList } from '../components';
 
-function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar }) {
+function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar, scale, setScale }) {
     const canvasRef = useRef(null);
-    // Состояние для хранения информации о текущем масштабе
-    const [scale, setScale] = useState(1); // Начальный масштаб 1x
     // Состояние для кэширования изображений
     const images = useRef({});
     // Состояние для хранения текущих координат курсора
@@ -502,7 +500,12 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         isDrawingWire, currentWire
     ]);
 
-    return <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}></canvas>;
+    return (
+        <div className='circuit-canvas'>
+            <canvas ref={canvasRef} style={{width: '100%', height: '100%'}}>
+            </canvas>;
+        </div>
+    );
 }
 
 export default CircuitCanvas;

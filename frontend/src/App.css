@@ -6,20 +6,20 @@ html, body {
   overflow: hidden;
 }
 
-.App {
+.app {
   display: flex;
   flex-direction: column;
   height: 100vh;
   margin: 0;
 }
 
-.App-content {
+.app-content {
   display: flex;
-  flex-direction: row; /* Элементы располагаются горизонтально */
   height: 100%; /* Занимает все доступное вертикальное пространство */
+  flex-grow: 1;
 }
 
-.App-header {
+.app-header {
   text-align: center;
   background: linear-gradient(90deg, rgba(12,12,12,1) 0%, rgba(33,33,33,1) 50%, rgba(12,12,12,1) 100%); /* Градиент от темно-серого к более светлому и обратно */
   display: flex;
@@ -33,23 +33,23 @@ html, body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Легкая тень для создания "плавающего" эффекта */
 }
 
-.App-logo {
+.app-logo {
   height: 25px;
   margin-left: 5px;
   pointer-events: none;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 40s linear;
+  .app-logo {
+    animation: app-logo-spin infinite 40s linear;
   }
 }
 
-.App-link {
+.app-link {
   color: #61dafb;
 }
 
-@keyframes App-logo-spin {
+@keyframes app-logo-spin {
   from {
     transform: rotate(0deg);
   }
@@ -57,3 +57,11 @@ html, body {
     transform: rotate(360deg);
   }
 }
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+  height: 100%;
+}
+
