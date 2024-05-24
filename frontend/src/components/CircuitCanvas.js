@@ -4,6 +4,8 @@ import { componentsList } from '../components';
 
 function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar }) {
     const canvasRef = useRef(null);
+    // Состояние для хранения информации о текущем масштабе
+    const [scale, setScale] = useState(1); // Начальный масштаб 1x
     // Состояние для кэширования изображений
     const images = useRef({});
     // Состояние для хранения текущих координат курсора
@@ -155,22 +157,47 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         });
     }
 
+    // 
+    function handleWheel(e) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+
+        // Проверяем, находится ли курсор внутри области canvas
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            e.preventDefault(); // Останавливаем прокрутку страницы
+            e.stopPropagation(); // Останавливаем всплывание события
+        }
+
+        const delta = e.deltaY * -0.01; // Изменение масштаба на каждое движение колесика
+        const newScale = Math.min(Math.max(scale + delta, 0.5), 3); // Ограничиваем масштаб от 0.5x до 3x
+        setScale(newScale);
+    }
+
+    // Корректировка координат курсора при масштабировании
+    function getCanvasCoordinates(e) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / scale; // Учитываем масштаб для X
+        const y = (e.clientY - rect.top) / scale; // Учитываем масштаб для Y
+        return { x, y };
+    }
+
     function handleResize() {
         const canvas = canvasRef.current;
         const rect = canvas.getBoundingClientRect();
         const context = canvas.getContext('2d', { alpha: true, antialias: true });
         context.imageSmoothingEnabled = false;
-        const scale = window.devicePixelRatio; // Учет плотности пикселей устройства
+        const dpr = window.devicePixelRatio; // Учет плотности пикселей устройства
 
         // Устанавливаем фактические размеры холста в пикселях
-        canvas.width = rect.width * scale;
-        canvas.height = rect.height * scale;
+        canvas.width = rect.width * dpr;
+        canvas.height = rect.height * dpr;
 
         // Устанавливаем размеры стилей для корректного отображения на странице
         canvas.style.width = `${rect.width}px`;
         canvas.style.height = `${rect.height}px`;
 
-        context.scale(scale, scale);
+        context.scale(dpr * scale, dpr * scale);
         context.fillStyle = 'black';
         context.fillRect(0, 0, canvas.width, canvas.height);
         drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
@@ -193,15 +220,13 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     }
 
     function handleClick(e) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        const rawX = e.clientX - rect.left;
-        const rawY = e.clientY - rect.top;
+        let { x, y } = getCanvasCoordinates(e);
 
         const gridCellSize = 25; // Размер ячейки сетки
 
         // Округление координат для выравнивания элемента по сетке
-        const x = Math.round(rawX / gridCellSize) * gridCellSize;
-        const y = Math.round(rawY / gridCellSize) * gridCellSize;
+        x = Math.round(x / gridCellSize) * gridCellSize;
+        y = Math.round(y / gridCellSize) * gridCellSize;
         
         if (selectedComponentFromSidebar && selectedComponentFromSidebar !== 'wire') {
             const newElement = {
@@ -239,14 +264,12 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     }
 
     function handleMouseDown(e) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
+        const { x, y } = getCanvasCoordinates(e);
 
          // Округление координат для выравнивания элемента по сетке
-         const gridCellSize = 25;
-         const roundedX = Math.round(x / gridCellSize) * gridCellSize;
-         const roundedY = Math.round(y / gridCellSize) * gridCellSize;
+        const gridCellSize = 25;
+        const roundedX = Math.round(x / gridCellSize) * gridCellSize;
+        const roundedY = Math.round(y / gridCellSize) * gridCellSize;
 
         if (selectedComponentFromSidebar === 'wire') {
             setIsDrawingWire(true);
@@ -293,10 +316,9 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
     }
 
     function handleMouseMove(e) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        // Обновление координат курсора относительно холста с учётом смещения между точкой клика и положением элемента
-        const x = e.clientX - rect.left - dragOffset.x;
-        const y = e.clientY - rect.top - dragOffset.y;
+        let { x, y } = getCanvasCoordinates(e);
+        x = x - dragOffset.x;
+        y = y - dragOffset.y;
 
         let isComponentHovered = false;
         elements.forEach((element, index) => {
@@ -456,6 +478,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         handleResize();
         const canvas = canvasRef.current;
         window.addEventListener('resize', handleResize);
+        canvas.addEventListener('wheel', handleWheel);
         canvas.addEventListener('click', handleClick);
         canvas.addEventListener('mousedown', handleMouseDown);
         canvas.addEventListener('mousemove', handleMouseMove);
@@ -465,6 +488,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
         return () => {
             window.removeEventListener('resize', handleResize);
+            canvas.removeEventListener('wheel', handleWheel);
             canvas.removeEventListener('click', handleClick);
             canvas.removeEventListener('mousedown', handleMouseDown);
             canvas.removeEventListener('mousemove', handleMouseMove);
@@ -472,7 +496,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [elements, preview, hoveredComponentIndex,
+    }, [scale, elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
         isDrawingWire, currentWire
