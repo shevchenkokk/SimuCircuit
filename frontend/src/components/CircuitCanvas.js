@@ -65,13 +65,32 @@ function CircuitCanvas({
     }
 
     // Рисование элемента
-    function drawComponent(context, component, x, y, opacity=1, rotation=0, isHovered=false, isSelected=false) {
+    function drawComponent(context, component, x, y, opacity=1, rotation=0, isHovered=false, isSelected=false, type=null, value=null) {
         getOrLoadImage(component.image, (img) => {
             context.save();
             context.globalAlpha = opacity;
             context.translate(x, y);  // Перемещаем контекст в центр элемента
             context.rotate((rotation * Math.PI) / 180); // Вращаем контекст на угол в радианах
             context.drawImage(img, -component.width / 2, - component.height / 2, component.width, component.height);
+
+            if (type) {
+                // Рисование текста
+                context.save();
+                if (rotation === 180) {
+                    context.rotate((rotation * Math.PI) / 180);
+                } else if (rotation === 270) {
+                    context.rotate(2 * (rotation * Math.PI) / 180);
+                }
+
+                const formattedValue = formatValue(type, value);
+
+                context.font = "14px Arial";
+                context.fillStyle = "turquoise";
+                context.textAlign = "center";
+                context.fillText(formattedValue, 0, -component.height / 2 + 20);  // Отрисовка над элементом
+                context.restore();
+            }
+
             if (isHovered) {
                 drawConnectionPoints(context, {x, y, width: component.width, height: component.height, rotation})
             }
@@ -124,6 +143,77 @@ function CircuitCanvas({
         const dx = nearestX - px;
         const dy = nearestY - py;
         return Math.sqrt(dx * dx + dy * dy) <= eps;
+    }
+
+    // Получение текущего значения элемента
+    function getElementValue(element) {
+        switch (element.type) {
+            case 'resistor':
+                return element.resistance;
+            case 'voltageSource':
+                return element.voltage;
+            case 'currentSource':
+                return element.current;
+            default:
+                return "Неизвестный тип элемента"
+        }
+    }
+
+    // Присваивание начального значения элемента при его создании
+    function setInitialValue(element) {
+        switch (element.type) {
+            case 'resistor':
+                element.resistance = 1; // 1 Ом
+                break;
+            case 'voltageSource':
+                element.voltage = 1; // 1 Вольт
+                break;
+            case 'currentSource':
+                element.current = 1; // 1 Ампер
+                break;
+            default:
+        }
+    }
+
+    // Форматирование текста, отображаемого для элемента
+    function formatValue(type, value) {
+        const num = parseFloat(value);
+    
+        let formattedValue = num;
+        let unit = "";
+    
+        // Определяем единицу измерения и форматируем число
+        switch (type) {
+            case 'resistor':
+                unit = "Ω";  // Ом
+                if (num >= 1000000) {
+                    formattedValue = (num / 1000000).toFixed(2) + " M" + unit;  // Мегаомы
+                } else if (num >= 1000) {
+                    formattedValue = (num / 1000).toFixed(2) + " k" + unit;  // Килоомы
+                } else if (num < 1) {
+                    formattedValue = (num * 1000).toFixed(2) + " m" + unit;  // Миллиомы
+                } else {
+                    formattedValue = num.toFixed(2) + " " + unit;
+                }
+                break;
+            case 'voltageSource':
+                unit = "В";  // Вольты
+                formattedValue = num.toFixed(2) + " " + unit;
+                break;
+            case 'currentSource':
+                unit = "А";  // Амперы
+                if (num >= 1000) {
+                    formattedValue = (num / 1000).toFixed(2) + " k" + unit;  // Килоамперы
+                } else if (num < 1) {
+                    formattedValue = (num * 1000).toFixed(2) + " mA";  // Миллиамперы
+                } else {
+                    formattedValue = num.toFixed(2) + " " + unit;
+                }
+                break;
+            default:
+        }
+    
+        return formattedValue;
     }
 
     // Получение соединительных точек элемента
@@ -232,7 +322,7 @@ function CircuitCanvas({
             } else {
                 const component = componentsList[element.type];
                 drawComponent(context, component, element.x, element.y, 1, element.rotation,
-                    index === hoveredComponentIndex, index === selectedComponentIndex);
+                    index === hoveredComponentIndex, index === selectedComponentIndex, element.type, getElementValue(element));
             }
         });
         if (preview) {
@@ -275,6 +365,7 @@ function CircuitCanvas({
                 y: y,
                 rotation: preview.rotation,
             }; // По умолчанию добавляем резистор
+            setInitialValue(newElement);
             setElements(prevElements => [...prevElements, newElement]);
             setSelectedComponentFromSidebar(null);
             setPreview(null);
@@ -481,6 +572,10 @@ function CircuitCanvas({
     // Обработка нажатий на клавиши
     function handleKeyDown(e) {
         if (!cursorPosition) return;
+        
+        if (document.activeElement.tagName === 'INPUT' || document.activeElement.tagName === 'TEXTAREA') {
+            return;
+        }
 
         // Управление углом поворота с клавиатуры
         if (e.key === 'r' || e.key === 'R') {

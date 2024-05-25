@@ -17,6 +17,7 @@ function ComponentSettingsModal({ onClose, element }) {
             case 'currentSource':
                 element.current = value;
                 break;
+            default:
         }
     };
 
@@ -28,6 +29,8 @@ function ComponentSettingsModal({ onClose, element }) {
                 return 'Источник напряжения';
             case 'currentSource':
                 return 'Источник тока';
+            default:
+                return "Неизвестный тип элемента";
         }
     }
 
@@ -41,8 +44,8 @@ function ComponentSettingsModal({ onClose, element }) {
                         <input
                             type="text"
                             defaultValue={element.resistance ? element.resistance : 0}
-                            placeholder="Введите сопротивление в омах (Ом)"
-                            onChange={handleInputChange} /> В
+                            title="Введите сопротивление в омах (Ом)"
+                            onChange={handleInputChange} /> Ом
                     </div>
                 )}
                 {element.type === 'voltageSource' && (
@@ -51,7 +54,7 @@ function ComponentSettingsModal({ onClose, element }) {
                         <input
                             type="text"
                             defaultValue={element.voltage ? element.voltage : 0}
-                            placeholder="Введите напряжение в вольтах (В)"
+                            title="Введите напряжение в вольтах (В)"
                             onChange={handleInputChange} /> В
                     </div>
                 )}
@@ -61,8 +64,8 @@ function ComponentSettingsModal({ onClose, element }) {
                         <input
                             type="text"
                             defaultValue={element.current ? element.current : 0}
-                            placeholder="Введите силу тока в амперах (А)"
-                            onChange={handleInputChange} /> В
+                            title="Введите силу тока в амперах (А)"
+                            onChange={handleInputChange} /> А
                     </div>
                 )}
                 <button onClick={onClose}>Закрыть</button>
