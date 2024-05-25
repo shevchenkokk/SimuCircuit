@@ -2,20 +2,25 @@ import React, { useRef, useEffect, useState } from 'react';
 import './CircuitCanvas.css';
 import { componentsList } from '../components';
 
-function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromSidebar, scale, setScale }) {
+function CircuitCanvas({ 
+    selectedComponentFromSidebar,
+    setSelectedComponentFromSidebar,
+    elements,
+    setElements,
+    scale,
+    setScale,
+    selectedComponentIndex,
+    setSelectedComponentIndex
+ }) {
     const canvasRef = useRef(null);
     // Состояние для кэширования изображений
     const images = useRef({});
     // Состояние для хранения текущих координат курсора
     const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
-    // Состояние для хранения информации о текущих элементах и выбранном элементе
-    const [elements, setElements] = useState([]);
     // Состояние для хранения информации о текущем положении курсора и выбранном элементе для предпросмотра.
     const [preview, setPreview] = useState(null);
     // Состояние для хранения информации о текущем элементе, на который наведена мышь
     const [hoveredComponentIndex, setHoveredComponentIndex] = useState(null);
-    // Состояние для хранения информации о текущем выделенном на холсте элементе
-    const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
     // Состояние для хранения информации о факте перемещения элемента
     const [isDragging, setIsDragging] = useState(false);
     // Состояние для хранения информации о перемещаемом элементе

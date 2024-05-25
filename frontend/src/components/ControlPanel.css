@@ -26,7 +26,12 @@
 
 .control-panel button.run-simulation-btn {
     width: 100px;
-    margin: 20px;
+    margin: 10px;
+}
+
+.control-panel button.component-settings-btn {
+    width: 75px;
+    margin-right: 10px;
 }
 
 .control-panel button img {

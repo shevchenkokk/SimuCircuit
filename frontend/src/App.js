@@ -6,8 +6,14 @@ import ControlPanel from './components/ControlPanel';
 import logoImage from './assets/images/logo.svg';
 
 function App() {
+    // Состояние для хранения информации о выбранном элементе с боковой панели
     const [selectedComponentFromSidebar, setSelectedComponentFromSidebar] = useState('');
+    // Состояние для хранения информации о текущем масштабе
     const [scale, setScale] = useState(1);
+    // Состояние для хранения информации о текущих элементах и выбранном элементе
+    const [elements, setElements] = useState([]);
+    // Состояние для хранения информации о текущем выделенном на холсте элементе
+    const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
 
     const handleZoomIn = () => {
         setScale(prevScale => Math.min(prevScale + 0.1, 3));  // Ограничение максимального зума
@@ -40,12 +46,17 @@ function App() {
                         onZoomChange={handleZoomChange}
                         onZoomOut={handleZoomOut}
                         scale={scale}
+                        selectedComponent={selectedComponentIndex !== null ? elements[selectedComponentIndex] : null}
                     />
                     <CircuitCanvas
                         selectedComponentFromSidebar={selectedComponentFromSidebar}
                         setSelectedComponentFromSidebar={setSelectedComponentFromSidebar}
+                        elements={elements}
+                        setElements={setElements}
                         scale={scale}
                         setScale={setScale}
+                        selectedComponentIndex={selectedComponentIndex}
+                        setSelectedComponentIndex={setSelectedComponentIndex}
                     />
                 </div>
             </div>
