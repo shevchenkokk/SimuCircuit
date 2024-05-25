@@ -1,6 +1,7 @@
 import wireImage from './assets/images/wire.svg';
 import resistorImage from './assets/images/resistor.svg';
-import voltageSourceImage from './assets/images/voltage_source.svg';
+import voltageSourceImage from './assets/images/voltage-source.svg';
+import currentSourceImage from './assets/images/current-source.svg';
 import ammeterImage from './assets/images/ammeter.svg';
 import voltmeterImage from './assets/images/voltmeter.svg';
 
@@ -12,22 +13,27 @@ export const componentsList = {
     },
     resistor: {
         image: resistorImage,
-        width: 64,
-        height: 64
+        width: 100,
+        height: 100
     },
     voltageSource: {
         image: voltageSourceImage,
-        width: 64,
-        height: 64
+        width: 100,
+        height: 100
+    },
+    currentSource: {
+        image: currentSourceImage,
+        width: 100,
+        height: 100
     },
     ammeter: {
         image: ammeterImage,
-        width: 64,
-        height: 64
+        width: 100,
+        height: 100
     },
     voltmeter: {
         image: voltmeterImage,
-        width: 64,
-        height: 64
+        width: 100,
+        height: 100
     }
 };
