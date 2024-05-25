@@ -42,7 +42,8 @@ function ComponentSettingsModal({ onClose, element }) {
                     <div>
                         <label> Сопротивление: </label>
                         <input
-                            type="text"
+                            type="number"
+                            min="0"
                             defaultValue={element.resistance ? element.resistance : 0}
                             title="Введите сопротивление в омах (Ом)"
                             onChange={handleInputChange} /> Ом
@@ -52,7 +53,8 @@ function ComponentSettingsModal({ onClose, element }) {
                     <div>
                         <label> Напряжение: </label>
                         <input
-                            type="text"
+                            type="number"
+                            min="0"
                             defaultValue={element.voltage ? element.voltage : 0}
                             title="Введите напряжение в вольтах (В)"
                             onChange={handleInputChange} /> В
@@ -62,7 +64,8 @@ function ComponentSettingsModal({ onClose, element }) {
                     <div>
                         <label> Сила тока: </label>
                         <input
-                            type="text"
+                            type="number"
+                            min="0"
                             defaultValue={element.current ? element.current : 0}
                             title="Введите силу тока в амперах (А)"
                             onChange={handleInputChange} /> А
