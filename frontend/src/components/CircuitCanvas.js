@@ -150,7 +150,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
         points.forEach(point => {
             context.beginPath();
-            context.arc(point.x, point.y, 4, 0, 2 * Math.PI);
+            context.arc(point.x, point.y, 5, 0, 2 * Math.PI);
             context.fillStyle = 'turquoise';
             context.fill();
             context.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -161,21 +161,34 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         });
     }
 
-    // 
-    function handleWheel(e) {
-        const rect = canvasRef.current.getBoundingClientRect();
-        const x = e.clientX;
-        const y = e.clientY;
+    // Рисование узлов – точек, в которых сходятся не менее трёх проводников
+    function drawNodes(context) {
+        const connectionCounts = {};
+        elements.forEach(element => {
+            const points = getConnectionPoints(element, componentsList[element.type]);
+            points.forEach(point => {
+                const key = `${point.x}_${point.y}`;
+                if (connectionCounts[key]) {
+                    connectionCounts[key].count += 1;
+                    connectionCounts[key].points.push(element);
+                } else {
+                    connectionCounts[key] = { count: 1, points: [element] };
+                }
+            });
+        });
 
-        // Проверяем, находится ли курсор внутри области canvas
-        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
-            e.preventDefault(); // Останавливаем прокрутку страницы
-            e.stopPropagation(); // Останавливаем всплывание события
-        }
-
-        const delta = e.deltaY * -0.01; // Изменение масштаба на каждое движение колесика
-        const newScale = Math.min(Math.max(scale + delta, 0.5), 3); // Ограничиваем масштаб от 0.5x до 3x
-        setScale(newScale);
+        Object.keys(connectionCounts).forEach(key => {
+            if (connectionCounts[key].count >= 3) {
+                const [x, y] = key.split('_').map(Number);
+                context.beginPath();
+                context.arc(x, y, 5, 0, 2 * Math.PI, false); // Размер кружка можно настроить
+                context.fillStyle = 'turquoise'; // Цвет кружка
+                context.fill();
+                context.lineWidth = 2;
+                context.strokeStyle = '#003300';
+                context.stroke();
+            }
+        });
     }
 
     // Корректировка координат курсора при масштабировании
@@ -221,7 +234,25 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             const component = componentsList[preview.type];
             drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
         }
+        drawNodes(context);
     }
+
+    function handleWheel(e) {
+        const rect = canvasRef.current.getBoundingClientRect();
+        const x = e.clientX;
+        const y = e.clientY;
+
+        // Проверяем, находится ли курсор внутри области canvas
+        if (x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom) {
+            e.preventDefault(); // Останавливаем прокрутку страницы
+            e.stopPropagation(); // Останавливаем всплывание события
+        }
+
+        const delta = e.deltaY * -0.01; // Изменение масштаба на каждое движение колесика
+        const newScale = Math.min(Math.max(scale + delta, 0.5), 3); // Ограничиваем масштаб от 0.5x до 3x
+        setScale(newScale);
+    }
+
 
     function handleClick(e) {
         let { x, y } = getCanvasCoordinates(e);
@@ -285,19 +316,17 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         let isConnectionPointClicked = false;
         elements.forEach((element, index) => {
             const component = componentsList[element.type];
-            if (index === hoveredComponentIndex) {
-                // Получаем точки соединения для наведённого элемента
-                const connectionPoints = getConnectionPoints(element, component);
+            // Получаем точки соединения для наведённого элемента
+            const connectionPoints = getConnectionPoints(element, component);
 
-                connectionPoints.forEach(point => {
-                    if (Math.hypot(point.x - x, point.y - y) < 10) {
-                        // Пользователь начал рисовать провод
-                        setIsDrawingWire(true);
-                        setCurrentWire({ startX: point.x, startY: point.y, endX: point.X, endY: point.Y })
-                        isConnectionPointClicked = true;
-                    }
-                });
-            }
+            connectionPoints.forEach(point => {
+                if (Math.hypot(point.x - x, point.y - y) < 10) {
+                    // Пользователь начал рисовать провод
+                    setIsDrawingWire(true);
+                    setCurrentWire({ startX: point.x, startY: point.y, endX: point.X, endY: point.Y })
+                    isConnectionPointClicked = true;
+                }
+            });
 
             if (!isConnectionPointClicked && !isDrawingWire) {
                 if (element.type === "wire") {
@@ -346,11 +375,11 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         }
 
         if (isDrawingWire) {
-            // Рассчитываем ближайший угол в 45 градусов
+            // Рассчитываем ближайший угол в 90 градусов
             const dx = x - currentWire.startX;
             const dy = y - currentWire.startY;
             const dist = Math.hypot(dx, dy);
-            const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+            const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 2)) * (Math.PI / 2);
             const endX = currentWire.startX + Math.cos(angle) * dist;
             const endY = currentWire.startY + Math.sin(angle) * dist;
             setCurrentWire(prevWire => ({ ...prevWire, endX: endX, endY: endY }));
