@@ -123,6 +123,12 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
 
     // Получение соединительных точек элемента
     function getConnectionPoints(element, component) {
+        if (element.type === 'wire') {
+            return [
+                {x: element.startX, y: element.startY},
+                {x: element.endX, y: element.endY}
+            ]
+        }
         const radians = (element.rotation * Math.PI) / 180;
         return [
             { x: element.x + Math.cos(radians) * component.width / 2, y: element.y - Math.sin(radians) * component.width / 2 },
@@ -279,15 +285,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         let isConnectionPointClicked = false;
         elements.forEach((element, index) => {
             const component = componentsList[element.type];
-            if (element.type === 'wire') {
-                // Проверка, попадает ли клик в область провода
-                if (isNearWire(roundedX, roundedY, element.startX, element.startY, element.endX, element.endY, 5)) {
-                    setIsDragging(true);
-                    setDraggedElementIndex(index);
-                    setDragOffset({ x: x - element.startX, y: y - element.startY });  // Смещение относительно начальной точки провода
-                    setSelectedComponentIndex(index);
-                }
-            } else if (index === hoveredComponentIndex) {
+            if (index === hoveredComponentIndex) {
                 // Получаем точки соединения для наведённого элемента
                 const connectionPoints = getConnectionPoints(element, component);
 
@@ -301,14 +299,22 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
                 });
             }
 
-            if (!isConnectionPointClicked &&
-                !isDrawingWire &&
-                x >= element.x - component.width / 2 && x <= element.x + component.width / 2 &&
+            if (!isConnectionPointClicked && !isDrawingWire) {
+                if (element.type === "wire") {
+                    // Проверка, попадает ли клик в область провода
+                    if (isNearWire(roundedX, roundedY, element.startX, element.startY, element.endX, element.endY, 8)) {
+                        setIsDragging(true);
+                        setDraggedElementIndex(index);
+                        setDragOffset({ x: x - element.startX, y: y - element.startY });  // Смещение относительно начальной точки провода
+                        setSelectedComponentIndex(index);
+                    }
+                } else if (x >= element.x - component.width / 2 && x <= element.x + component.width / 2 &&
                 y >= element.y - component.height / 2 && y <= element.y + component.height / 2) {
-                setIsDragging(true);
-                setDraggedElementIndex(index);
-                setDragOffset({ x: x - element.x, y: y - element.y });
-                setSelectedComponentIndex(index);
+                    setIsDragging(true);
+                    setDraggedElementIndex(index);
+                    setDragOffset({ x: x - element.x, y: y - element.y });
+                    setSelectedComponentIndex(index);
+                }
             }
         });
     }
