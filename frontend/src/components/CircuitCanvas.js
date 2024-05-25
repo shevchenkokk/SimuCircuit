@@ -131,8 +131,8 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         }
         const radians = (element.rotation * Math.PI) / 180;
         return [
-            { x: element.x + Math.cos(radians) * component.width / 2, y: element.y - Math.sin(radians) * component.width / 2 },
-            { x: element.x - Math.cos(radians) * component.width / 2, y: element.y + Math.sin(radians) * component.width / 2 }
+            { x: element.x + Math.cos(radians) * component.width / 2, y: element.y + Math.sin(radians) * component.width / 2 },
+            { x: element.x - Math.cos(radians) * component.width / 2, y: element.y - Math.sin(radians) * component.width / 2 }
         ];
     }
 
@@ -451,7 +451,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
         // Управление углом поворота с клавиатуры
         if (e.key === 'r' || e.key === 'R') {
             if (selectedComponentFromSidebar && preview) {
-                const newRotation = (preview.rotation + 45) % 360;
+                const newRotation = (preview.rotation + 90) % 360;
                 setPreview({
                     type: selectedComponentFromSidebar,
                     x: cursorPosition.x,
@@ -461,7 +461,7 @@ function CircuitCanvas({ selectedComponentFromSidebar, setSelectedComponentFromS
             } else if (selectedComponentIndex !== null) {
                 setElements(prevElements => prevElements.map((element, index) => {
                     if (index === selectedComponentIndex) {
-                        const newRotation = (element.rotation + 45) % 360;
+                        const newRotation = (element.rotation + 90) % 360;
                         return { ...element, rotation: newRotation }
                     }
                     return element;
