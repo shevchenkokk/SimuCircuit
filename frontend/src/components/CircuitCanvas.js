@@ -223,14 +223,26 @@ const CircuitCanvas = forwardRef(({
     function getConnectionPoints(element, component) {
         if (element.type === 'wire') {
             return [
-                {x: element.startX, y: element.startY},
-                {x: element.endX, y: element.endY}
+                {   
+                    x: Math.round(element.startX),
+                    y: Math.round(element.startY)
+                },
+                { 
+                    x: Math.round(element.endX),
+                    y: Math.round(element.endY)
+                }
             ]
         }
         const radians = (element.rotation * Math.PI) / 180;
         return [
-            { x: element.x + Math.cos(radians) * component.width / 2, y: element.y + Math.sin(radians) * component.width / 2 },
-            { x: element.x - Math.cos(radians) * component.width / 2, y: element.y - Math.sin(radians) * component.width / 2 }
+            {
+                x: Math.round(element.x + Math.cos(radians) * component.width / 2),
+                y: Math.round(element.y + Math.sin(radians) * component.width / 2)
+            },
+            { 
+                x: Math.round(element.x - Math.cos(radians) * component.width / 2),
+                y: Math.round(element.y - Math.sin(radians) * component.width / 2)
+            }
         ];
     }
 
@@ -296,11 +308,25 @@ const CircuitCanvas = forwardRef(({
     // Построение графа, представляющего электрическую цепь
     // TODO
     function createCircuitGraph() {
+        // Для поиска узлов
         const connectionCounts = {};
+        // Для хранения связей между соединительными точками
+        const connections = {}
+
         elements.forEach(element => {
             const points = getConnectionPoints(element, componentsList[element.type]);
-            points.forEach(point => {
+            points.forEach((point, index) => {
                 const key = `${point.x}_${point.y}`;
+                if (!connections[key]) {
+                    connections[key] = []
+                }
+
+                if (index === 0 && points[1]) {
+                    connections[key].push({ node: `${points[1].x}_${points[1].y}`, element });
+                    connections[`${points[1].x}_${points[1].y}`] = connections[`${points[1].x}_${points[1].y}`] || [];
+                    connections[`${points[1].x}_${points[1].y}`].push({ node: key, element });
+                }
+
                 if (connectionCounts[key]) {
                     connectionCounts[key].count += 1;
                     connectionCounts[key].points.push(element);
@@ -311,15 +337,61 @@ const CircuitCanvas = forwardRef(({
         });
 
         const nodes = Object.keys(connectionCounts).filter(key => connectionCounts[key].count >= 3);
-        const edges = {}
+        const nodesSet = new Set(nodes);
+
+        // Поиск всех путей от startNode до endNode со сбором элементов
+        function findAllPaths(startNode, endNode, connections) {
+            const paths = [];
+            const visited = new Set();
+
+            // Используем алгоритм обхода графа в глубину
+            function dfs(currentNode, currentPath) {
+                if (currentNode === endNode) {
+                    // Добавляем копию текущего пути в результат
+                    paths.push(currentPath.slice());
+                    return;
+                }
+
+                visited.add(currentNode);
+
+                if (connections[currentNode]) {
+                    connections[currentNode].forEach(neighbor => {
+                        if (!visited.has(neighbor.node)) {
+                            if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
+                                currentPath.push(neighbor.element);
+                                dfs(neighbor.node, currentPath);
+                                currentPath.pop();
+                            }
+                        }
+                    });
+                }
+
+                visited.delete(currentNode);
+            };
+
+            dfs(startNode, [])
+
+            return paths;
+        };
         
+        let edges = [];
+        for (let i = 0; i < nodes.length; i++) {
+            for (let j = i + 1; j < nodes.length; j++) {
+                const allPaths = findAllPaths(nodes[i], nodes[j], connections);
+                edges = edges.concat(allPaths.map(path => ({
+                    from: nodes[i],
+                    to: nodes[j],
+                    elements: path
+                })));
+            }
+        }
         
-        const newCircuitGraph = {
+        const circuitGraph = {
             nodes: nodes,
             edges: edges
         };
 
-        return newCircuitGraph;
+        return circuitGraph;
     }
 
     // Корректировка координат курсора при масштабировании

@@ -45,7 +45,7 @@ function App() {
 
         ws.onclose = (e) => {
             console.log('WebSocket closed, trying to reconnect...', e);
-            setTimeout(setUpWebSocket, 1000) // Попытка переподключения через 1 секунду
+            setTimeout(setUpWebSocket, 5000) // Попытка переподключения через 5 секунд
         };
 
         return ws;
