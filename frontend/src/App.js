@@ -24,6 +24,34 @@ function App() {
     // Ссылка на CircuitCanvas
     const circuitCanvasRef = useRef(null);
 
+    const [socket, setSocket] = useState(null);
+
+    useEffect(() => {
+        // Подключение к WebSocket-серверу
+        const ws = new WebSocket('ws://localhost:4000/ws');
+        
+        ws.onopen = () => {
+            console.log('WebSocket connected');
+        };
+
+        ws.onmessage = (e) => {
+            const data = JSON.parse(e.data);
+            console.log('Received data from WebSocket:', data);
+        };
+
+        ws.onerror = (error) => {
+            console.log('WebSocket error: ', error);
+        };
+
+        setSocket(ws);
+
+        return () => {
+            if (ws.readyState === WebSocket.OPEN) {
+                ws.close();
+            }
+        };
+    }, []);
+
     const handleZoomIn = () => {
         setScale(prevScale => Math.min(prevScale + 0.1, 3));  // Ограничение максимального зума
     };
@@ -40,10 +68,16 @@ function App() {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
         setCircuitGraph(newCircuitGraph);
         //const formattedCircuitGraph = formatCircuitGraphForServer(circuitGraph);
+        // Отправка информации об электрической цепи серверу
+        if (socket) {
+            socket.send(JSON.stringify(newCircuitGraph));
+        }
     };
 
     useEffect(() => {
+        if (circuitGraph) {
             console.log("Formatted circuit for simulation: ", circuitGraph);
+        }
     }, [circuitGraph]);
 
     return (
