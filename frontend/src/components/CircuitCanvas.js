@@ -4,8 +4,6 @@ import { componentsList } from '../components';
 import { v4 as uuidv4 } from 'uuid';
 
 const CircuitCanvas = forwardRef(({
-    circuitGraph,
-    setCircuitGraph,
     selectedComponentFromSidebar,
     setSelectedComponentFromSidebar,
     elements,
@@ -358,6 +356,34 @@ const CircuitCanvas = forwardRef(({
                     connections[currentNode].forEach(neighbor => {
                         if (!visited.has(neighbor.node)) {
                             if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
+                                if (neighbor.element.type === 'voltageSource' || neighbor.element.type === 'currentSource') {
+                                    // Определение направления источника
+                                    if (neighbor.element.rotation === 0) {
+                                        if (currentNode.split('_')[0] < endNode.split('_')[0]) {
+                                            neighbor.element.direction = { from: startNode, to: endNode }
+                                        } else {
+                                            neighbor.element.direction = { from: endNode, to: startNode }
+                                        }
+                                    } else if (neighbor.element.rotation === 90) {
+                                        if ((currentNode.split('_')[1] < endNode.split('_')[1])) {
+                                            neighbor.element.direction = {from: endNode, to: startNode }
+                                        } else {
+                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                        }
+                                    } else if (neighbor.element.rotation === 180) {
+                                        if ((currentNode.split('_')[0] < endNode.split('_')[0])) {
+                                            neighbor.element.direction = {from: endNode, to: startNode }
+                                        } else {
+                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                        }
+                                    } else if (neighbor.element.rotation === 270) {
+                                        if ((currentNode.split('_')[1] < endNode.split('_')[1])) {
+                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                        } else {
+                                           neighbor.element.direction = {from: endNode, to: startNode }
+                                        }
+                                    }
+                                }
                                 currentPath.push(neighbor.element);
                                 dfs(neighbor.node, currentPath);
                                 currentPath.pop();
@@ -637,6 +663,7 @@ const CircuitCanvas = forwardRef(({
             const dist = Math.hypot(roundedEndX - currentWire.startX, roundedEndY - currentWire.startY);
             if (dist >= gridCellSize) {
                 const newElement = {
+                    id: uuidv4(),
                     type: 'wire',
                     startX: currentWire.startX,
                     startY: currentWire.startY,
@@ -739,7 +766,7 @@ const CircuitCanvas = forwardRef(({
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [circuitGraph, scale, elements, preview, hoveredComponentIndex,
+    }, [scale, elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
         isDrawingWire, currentWire

@@ -77,11 +77,14 @@ function App() {
 
     const handleStartSimulation = () => {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
-        setCircuitGraph(newCircuitGraph);
-        //const formattedCircuitGraph = formatCircuitGraphForServer(circuitGraph);
+        
+        const formattedCircuitGraph = formatCircuitGraphForServer(newCircuitGraph);
+        
+        setCircuitGraph(formattedCircuitGraph);
+        
         // Отправка информации об электрической цепи WebSocket-серверу
         if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(newCircuitGraph));
+            socket.send(JSON.stringify(circuitGraph));
         }
     };
 
