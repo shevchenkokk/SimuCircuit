@@ -26,7 +26,7 @@ function App() {
 
     const [socket, setSocket] = useState(null);
 
-    useEffect(() => {
+    function setUpWebSocket() {
         // Подключение к WebSocket-серверу
         const ws = new WebSocket('ws://localhost:4000/ws');
         
@@ -43,6 +43,17 @@ function App() {
             console.log('WebSocket error: ', error);
         };
 
+        ws.onclose = (e) => {
+            console.log('WebSocket closed, trying to reconnect...', e);
+            setTimeout(setUpWebSocket, 1000) // Попытка переподключения через 1 секунду
+        };
+
+        return ws;
+    }
+
+    useEffect(() => {
+        // Подключение к WebSocket-серверу
+        const ws = setUpWebSocket();
         setSocket(ws);
 
         return () => {
@@ -68,8 +79,8 @@ function App() {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
         setCircuitGraph(newCircuitGraph);
         //const formattedCircuitGraph = formatCircuitGraphForServer(circuitGraph);
-        // Отправка информации об электрической цепи серверу
-        if (socket) {
+        // Отправка информации об электрической цепи WebSocket-серверу
+        if (socket && socket.readyState === WebSocket.OPEN) {
             socket.send(JSON.stringify(newCircuitGraph));
         }
     };
