@@ -1,8 +1,11 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, forwardRef, useImperativeHandle } from 'react';
 import './CircuitCanvas.css';
 import { componentsList } from '../components';
+import { v4 as uuidv4 } from 'uuid';
 
-function CircuitCanvas({ 
+const CircuitCanvas = forwardRef(({
+    circuitGraph,
+    setCircuitGraph,
     selectedComponentFromSidebar,
     setSelectedComponentFromSidebar,
     elements,
@@ -11,7 +14,7 @@ function CircuitCanvas({
     setScale,
     selectedComponentIndex,
     setSelectedComponentIndex
- }) {
+ }, ref) => {
     const canvasRef = useRef(null);
     // Состояние для кэширования изображений
     const images = useRef({});
@@ -286,6 +289,39 @@ function CircuitCanvas({
         });
     }
 
+    useImperativeHandle(ref, () => ({
+        createCircuitGraph,
+    }));
+
+    // Построение графа, представляющего электрическую цепь
+    // TODO
+    function createCircuitGraph() {
+        const connectionCounts = {};
+        elements.forEach(element => {
+            const points = getConnectionPoints(element, componentsList[element.type]);
+            points.forEach(point => {
+                const key = `${point.x}_${point.y}`;
+                if (connectionCounts[key]) {
+                    connectionCounts[key].count += 1;
+                    connectionCounts[key].points.push(element);
+                } else {
+                    connectionCounts[key] = { count: 1, points: [element] };
+                }
+            });
+        });
+
+        const nodes = Object.keys(connectionCounts).filter(key => connectionCounts[key].count >= 3);
+        const edges = {}
+        
+        
+        const newCircuitGraph = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        return newCircuitGraph;
+    }
+
     // Корректировка координат курсора при масштабировании
     function getCanvasCoordinates(e) {
         const rect = canvasRef.current.getBoundingClientRect();
@@ -360,11 +396,13 @@ function CircuitCanvas({
         
         if (selectedComponentFromSidebar && selectedComponentFromSidebar !== 'wire') {
             const newElement = {
+                id: uuidv4(),
                 type: selectedComponentFromSidebar,
                 x: x,
                 y: y,
                 rotation: preview.rotation,
             }; // По умолчанию добавляем резистор
+            console.log(newElement)
             setInitialValue(newElement);
             setElements(prevElements => [...prevElements, newElement]);
             setSelectedComponentFromSidebar(null);
@@ -629,7 +667,7 @@ function CircuitCanvas({
             canvas.removeEventListener('mouseleave', clearPreview);
             window.removeEventListener('keydown', handleKeyDown);
         };
-    }, [scale, elements, preview, hoveredComponentIndex,
+    }, [circuitGraph, scale, elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
         isDrawingWire, currentWire
@@ -641,6 +679,6 @@ function CircuitCanvas({
             </canvas>;
         </div>
     );
-}
+});
 
 export default CircuitCanvas;

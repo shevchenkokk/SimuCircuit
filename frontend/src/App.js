@@ -1,9 +1,13 @@
-import React, { useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
+
 import './App.css';
+
 import CircuitCanvas from './components/CircuitCanvas';
 import Sidebar from './components/Sidebar';
 import ControlPanel from './components/ControlPanel';
 import logoImage from './assets/images/logo.svg';
+
+import { formatCircuitGraphForServer } from './utils/CircuitUtils';
 
 function App() {
     // Состояние для хранения информации о выбранном элементе с боковой панели
@@ -14,6 +18,11 @@ function App() {
     const [elements, setElements] = useState([]);
     // Состояние для хранения информации о текущем выделенном на холсте элементе
     const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
+    // Состояние для хранения информации о графе электрической цепи, построенной пользователем
+    const [circuitGraph, setCircuitGraph] = useState(null);
+
+    // Ссылка на CircuitCanvas
+    const circuitCanvasRef = useRef(null);
 
     const handleZoomIn = () => {
         setScale(prevScale => Math.min(prevScale + 0.1, 3));  // Ограничение максимального зума
@@ -28,8 +37,14 @@ function App() {
     };
 
     const handleStartSimulation = () => {
-        console.log("Starting simulation");
+        const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
+        setCircuitGraph(newCircuitGraph);
+        //const formattedCircuitGraph = formatCircuitGraphForServer(circuitGraph);
     };
+
+    useEffect(() => {
+            console.log("Formatted circuit for simulation: ", circuitGraph);
+    }, [circuitGraph]);
 
     return (
         <div className="app">
@@ -49,6 +64,7 @@ function App() {
                         selectedComponent={selectedComponentIndex !== null ? elements[selectedComponentIndex] : null}
                     />
                     <CircuitCanvas
+                        ref={circuitCanvasRef}
                         selectedComponentFromSidebar={selectedComponentFromSidebar}
                         setSelectedComponentFromSidebar={setSelectedComponentFromSidebar}
                         elements={elements}
