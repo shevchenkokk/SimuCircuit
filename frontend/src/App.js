@@ -57,9 +57,7 @@ function App() {
         setSocket(ws);
 
         return () => {
-            if (ws.readyState === WebSocket.OPEN) {
-                ws.close();
-            }
+            ws.close();
         };
     }, []);
 
@@ -81,10 +79,10 @@ function App() {
         const formattedCircuitGraph = formatCircuitGraphForServer(newCircuitGraph);
         
         setCircuitGraph(formattedCircuitGraph);
-        
+
         // Отправка информации об электрической цепи WebSocket-серверу
         if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(circuitGraph));
+            socket.send(JSON.stringify(formattedCircuitGraph));
         }
     };
 

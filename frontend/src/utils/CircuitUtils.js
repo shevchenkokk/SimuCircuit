@@ -1,8 +1,11 @@
 
 
+
+
 export function formatCircuitGraphForServer(circuitGraph) {
     const nodeToIdMap = new Map();
     let nodeId = 1;
+    let edgeId = 1;
 
     // Присваиваем каждому узлу уникальный ID на основе его строки координат
     circuitGraph.nodes.forEach(node => {
@@ -17,6 +20,7 @@ export function formatCircuitGraphForServer(circuitGraph) {
     // Форматируем рёбра
     const formattedEdges = circuitGraph.edges.map(edge => {
         return {
+            id: edgeId++,
             from: nodeToIdMap.get(edge.from),
             to: nodeToIdMap.get(edge.to),
             elements: edge.elements.map(element => {

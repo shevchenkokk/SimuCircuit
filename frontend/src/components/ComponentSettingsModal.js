@@ -7,15 +7,17 @@ function ComponentSettingsModal({ onClose, element }) {
 
     const handleInputChange = (e) => {
         const value = e.target.value;
+        const numericValue = parseFloat(value);
+
         switch (element.type) {
             case 'resistor':
-                element.resistance = value;
+                element.resistance = numericValue;
                 break;
             case 'voltageSource':
-                element.voltage = value;
+                element.voltage = numericValue;
                 break;
             case 'currentSource':
-                element.current = value;
+                element.current = numericValue;
                 break;
             default:
         }
