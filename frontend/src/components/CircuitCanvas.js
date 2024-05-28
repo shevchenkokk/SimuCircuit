@@ -85,7 +85,7 @@ const CircuitCanvas = forwardRef(({
 
                 const formattedValue = formatValue(type, value);
 
-                context.font = "14px Arial";
+                context.font = "12px Arial";
                 context.fillStyle = "turquoise";
                 context.textAlign = "center";
                 context.fillText(formattedValue, 0, -component.height / 2 + 20);  // Отрисовка над элементом
@@ -116,6 +116,31 @@ const CircuitCanvas = forwardRef(({
         if (isHovered) {
             drawWireConnectionPoints(context, wire.startX, wire.startY);
             drawWireConnectionPoints(context, wire.endX, wire.endY);
+        }
+
+        if (wire.current) {
+            const dx = Math.abs(wire.endX - wire.startX);
+            const dy = Math.abs(wire.endY - wire.startY);
+            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+
+            context.save();
+            context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
+            context.rotate(Math.atan2(dy, dx));
+
+            // Выбор позиции для текста в зависимости от угла
+            let textX = 0;
+            let textY = -10;
+
+            if (angle > 90 || angle < -90) {
+                context.rotate(Math.PI); // Переворачиваем текст, чтобы он оставался наверху
+                textY = 10;
+            }
+
+            context.fillStyle = 'turquoise';
+            context.font = '12px Arial';
+            context.textAlign = "center";
+            context.fillText(`${wire.current.toFixed(2)} A`, textX, textY);
+            context.restore();
         }
     }
 
@@ -500,7 +525,6 @@ const CircuitCanvas = forwardRef(({
                 y: y,
                 rotation: preview.rotation,
             }; // По умолчанию добавляем резистор
-            console.log(newElement)
             setInitialValue(newElement);
             setElements(prevElements => [...prevElements, newElement]);
             setSelectedComponentFromSidebar(null);

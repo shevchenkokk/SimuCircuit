@@ -20,6 +20,10 @@ function App() {
     const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
     // Состояние для хранения информации о графе электрической цепи, построенной пользователем
     const [circuitGraph, setCircuitGraph] = useState(null);
+    // Состояние для хранения информации о проводах и ветвях, которым они принадлежат
+    const [wireToEdgeMap, setWireToEdgeMap] = useState(null);
+
+    const wireToEdgeMapRef = useRef(null);
 
     // Ссылка на CircuitCanvas
     const circuitCanvasRef = useRef(null);
@@ -36,7 +40,9 @@ function App() {
 
         ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            console.log('Received data from WebSocket:', data);
+            if (data.calculation_result.branch_currents && data.calculation_result.branch_currents) {
+                updateWireCurrents(data.calculation_result.branch_currents);
+            }
         };
 
         ws.onerror = (error) => {
@@ -73,12 +79,28 @@ function App() {
         setScale(prevScale => Math.max(prevScale - 0.1, 0.5));  // Ограничение минимального зума
     };
 
+    const updateWireCurrents = (branchCurrents) => {
+        setElements(prevElements => prevElements.map(element => {
+            if (element.type === 'wire') {
+                const wireEdgeId = wireToEdgeMapRef.current[element.id];
+                const branchCurrent = branchCurrents.find(bc => bc.id === wireEdgeId);
+                if (branchCurrent) {
+                    return { ...element, current: branchCurrent.current };
+                }
+            }
+            return element;
+        }));
+    };
+
     const handleStartSimulation = () => {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
         
-        const formattedCircuitGraph = formatCircuitGraphForServer(newCircuitGraph);
+        const { nodes, edges, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
+
+        const formattedCircuitGraph = { nodes, edges };
         
         setCircuitGraph(formattedCircuitGraph);
+        setWireToEdgeMap(newWireToEdgeMap);
 
         // Отправка информации об электрической цепи WebSocket-серверу
         if (socket && socket.readyState === WebSocket.OPEN) {
@@ -90,7 +112,8 @@ function App() {
         if (circuitGraph) {
             console.log("Formatted circuit for simulation: ", circuitGraph);
         }
-    }, [circuitGraph]);
+        wireToEdgeMapRef.current = wireToEdgeMap
+    }, [circuitGraph, wireToEdgeMap]);
 
     return (
         <div className="app">

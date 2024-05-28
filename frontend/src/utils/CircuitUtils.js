@@ -4,6 +4,7 @@
 
 export function formatCircuitGraphForServer(circuitGraph) {
     const nodeToIdMap = new Map();
+    const wireToEdgeMap = new Map();
     let nodeId = 1;
     let edgeId = 1;
 
@@ -25,6 +26,7 @@ export function formatCircuitGraphForServer(circuitGraph) {
             to: nodeToIdMap.get(edge.to),
             elements: edge.elements.map(element => {
                 if (element.type === 'wire') {
+                    wireToEdgeMap.set(element.id, edgeId - 1);
                     return {
                         id: element.id,
                         type: element.type,
@@ -57,6 +59,7 @@ export function formatCircuitGraphForServer(circuitGraph) {
 
     return {
         nodes: formattedNodes,
-        edges: formattedEdges
+        edges: formattedEdges,
+        newWireToEdgeMap: Object.fromEntries(wireToEdgeMap)
     }
 }
