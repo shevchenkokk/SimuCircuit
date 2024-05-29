@@ -56,6 +56,10 @@ const CircuitCanvas = forwardRef(({
             context.lineTo(context.canvas.width, j);
             context.stroke();
         }
+
+        context.strokeStyle = 'turquoise';
+        context.lineWidth = 1.5;
+        context.strokeRect(1.5, 1.5, context.canvas.width - 3, context.canvas.height - 3);
     }
 
     function getOrLoadImage(src, callback) {
