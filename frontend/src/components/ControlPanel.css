@@ -1,0 +1,81 @@
+.control-panel {
+    width: 100%; /* Вычитаем ширину Sidebar */
+    height: 35px; /* Фиксированная высота панели */
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Распределение кнопок на панели */
+    background: linear-gradient(90deg, rgba(12,12,12,1) 0%, rgba(33,33,33,1) 50%, rgba(12,12,12,1) 100%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.control-panel button {
+    background: none;
+    border: 2px solid white;
+    border-radius: 10px;
+    padding: 5px;
+    width: 35px;
+    height: 25px;
+    margin: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, transform 0.3s;
+    cursor: pointer;
+}
+
+.control-panel button.run-simulation-btn {
+    width: 100px;
+    margin: 10px;
+}
+
+.control-panel button.component-settings-btn {
+    width: 75px;
+    margin-right: 10px;
+}
+
+.control-panel button img {
+    width: 15px;
+    height: 15px;
+    display: block;
+}
+
+.control-panel button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+.control-panel button:active {
+    transform: scale(0.9);
+}
+
+.control-panel button:hover::after {
+    content: attr(data-title); /* Отображение значения атрибута data-title */
+    position: absolute; /* Абсолютное позиционирование позволяет позиционировать текст точно */
+    left: 100%; /* Расположение справа от кнопки */
+    top: 50%; /* Расположение по вертикали */
+    transform: translate(0, -50%); /* Центрирование текста по вертикали */
+    white-space: nowrap; /* Текст в одну строку */
+    background-color: #333; /* Фон подсказки */
+    color: #fff; /* Цвет текста подсказки */
+    padding: 5px 8px; /* Отступы внутри подсказки */
+    border-radius: 4px; /* Скругление углов подсказки */
+    font-size: 14px; /* Размер шрифта подсказки */
+    z-index: 1000; /* Убедитесь, что подсказка отображается над другими элементами */
+    margin-left: 8px; /* Дополнительный отступ слева */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Небольшая тень для подсказки */
+    pointer-events: none; /* Предотвращение взаимодействия с подсказкой */
+}
+
+.control-panel input.zoom-input {
+    width: 50px;
+    height: 25px;
+    margin: 5px;
+    border: 2px solid white;
+    border-radius: 10px;
+    background: none;
+    color: white;
+    padding: 5px;
+    box-sizing: border-box;
+    text-align: center;
+}

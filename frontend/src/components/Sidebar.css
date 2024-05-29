@@ -1,0 +1,72 @@
+.sidebar {
+    width: 75px; /* Уменьшенная ширина для минималистичного вида */
+    height: 100vh;
+    position: flex;
+    top: 50px;
+    left: 0;
+    background: linear-gradient( rgb(13, 13, 13) 0%, rgb(27, 26, 26) 50%, rgb(14, 14, 14) 100%); /* Градиент от темно-серого к более светлому и обратно */
+    padding: 10px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    border-right: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая линия для визуального отделения заголовка от контента */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Легкая тень для создания "плавающего" эффекта */   
+}
+
+.sidebar h2 {
+    color: white;
+    font-size: 14px;
+    margin-bottom: 20px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: none; /* Скрытие заголовка для более чистого вида */
+}
+
+.sidebar button {
+    background: none;
+    border: 2px solid white; /* Границы для кнопок */
+    border-radius: 50%; /* Круглые кнопки */
+    margin: 10px 0;
+    padding: 5px;
+    width: 50px; /* Фиксированный размер */
+    height: 50px; /* Фиксированный размер */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.3s, transform 0.3s;
+    position: relative;
+}
+
+.sidebar button img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.sidebar button:hover {
+    background-color: rgba(255, 255, 255, 0.2); /* Светлый фон при наведении */
+    transform: scale(1.1); /* Увеличение при наведении */
+}
+
+.sidebar button:active {
+    transform: scale(0.9); /* Сжатие при нажатии */
+}
+
+.sidebar button:hover::after {
+    content: attr(data-title); /* Отображение значения атрибута data-title */
+    position: absolute; /* Абсолютное позиционирование позволяет позиционировать текст точно */
+    left: 100%; /* Расположение справа от кнопки */
+    top: 50%; /* Расположение по вертикали */
+    transform: translate(0, -50%); /* Центрирование текста по вертикали */
+    white-space: nowrap; /* Текст в одну строку */
+    background-color: #333; /* Фон подсказки */
+    color: #fff; /* Цвет текста подсказки */
+    padding: 5px 8px; /* Отступы внутри подсказки */
+    border-radius: 4px; /* Скругление углов подсказки */
+    font-size: 14px; /* Размер шрифта подсказки */
+    z-index: 1000; /* Убедитесь, что подсказка отображается над другими элементами */
+    margin-left: 8px; /* Дополнительный отступ слева */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Небольшая тень для подсказки */
+    pointer-events: none; /* Предотвращение взаимодействия с подсказкой */
+}
