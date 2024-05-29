@@ -32,6 +32,12 @@ const CircuitCanvas = forwardRef(({
     const [isDrawingWire, setIsDrawingWire] = useState(false);
     // Состояние для хранения информации о текущем рисуемом проводе
     const [currentWire, setCurrentWire] = useState(null);
+    // Состояние для хранения информации о факте перемещения канваса
+    const [isPanning, setIsPanning] = useState(false);
+    // Состояние для хранения информации о о начале перемещения канваса
+    const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+    // Состояние для хранения информации о текущем смещении канваса относительно исходного положения
+    const [canvasOffset, setCanvasOffset] = useState({ x: 0, y: 0 });
 
     function drawGrid(context, color, stepx, stepy) {
         context.strokeStyle = color;
@@ -448,8 +454,8 @@ const CircuitCanvas = forwardRef(({
     // Корректировка координат курсора при масштабировании
     function getCanvasCoordinates(e) {
         const rect = canvasRef.current.getBoundingClientRect();
-        const x = (e.clientX - rect.left) / scale; // Учитываем масштаб для X
-        const y = (e.clientY - rect.top) / scale; // Учитываем масштаб для Y
+        const x = (e.clientX - rect.left) / scale - canvasOffset.x // Учитываем масштаб для X
+        const y = (e.clientY - rect.top) / scale - canvasOffset.y; // Учитываем масштаб для Y
         return { x, y };
     }
 
@@ -469,8 +475,13 @@ const CircuitCanvas = forwardRef(({
         canvas.style.height = `${rect.height}px`;
 
         context.scale(dpr * scale, dpr * scale);
+
         context.fillStyle = 'black';
         context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        context.save();
+        context.translate(canvasOffset.x, canvasOffset.y);
+
         drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
         if (currentWire) {
             drawWire(context, currentWire); // Рисуем провод
@@ -489,6 +500,7 @@ const CircuitCanvas = forwardRef(({
             drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
         }
         drawNodes(context);
+        context.restore();
     }
 
     function handleWheel(e) {
@@ -503,7 +515,7 @@ const CircuitCanvas = forwardRef(({
         }
 
         const delta = e.deltaY * -0.01; // Изменение масштаба на каждое движение колесика
-        const newScale = Math.min(Math.max(scale + delta, 0.5), 3); // Ограничиваем масштаб от 0.5x до 3x
+        const newScale = Math.min(Math.max(scale + delta, 0.5), 3); // Ограничиваем масштаб от 0.2x до 3x
         setScale(newScale);
     }
 
@@ -562,15 +574,19 @@ const CircuitCanvas = forwardRef(({
         const roundedX = Math.round(x / gridCellSize) * gridCellSize;
         const roundedY = Math.round(y / gridCellSize) * gridCellSize;
 
+
+        let isWireDrawing = false;
         if (selectedComponentFromSidebar === 'wire') {
+            isWireDrawing = true;
             setIsDrawingWire(true);
             setCurrentWire({ startX: roundedX, startY: roundedY, endX: roundedX, endY: roundedY })
             setSelectedComponentFromSidebar(null);
             return;
         }
 
-        let isConnectionPointClicked = false;
+        let isComponentDragging = false;
         elements.forEach((element, index) => {
+            let isConnectionPointClicked = false;
             const component = componentsList[element.type];
             // Получаем точки соединения для наведённого элемента
             const connectionPoints = getConnectionPoints(element, component);
@@ -578,6 +594,7 @@ const CircuitCanvas = forwardRef(({
             connectionPoints.forEach(point => {
                 if (Math.hypot(point.x - x, point.y - y) < 10) {
                     // Пользователь начал рисовать провод
+                    isWireDrawing = true;
                     setIsDrawingWire(true);
                     setCurrentWire({ startX: point.x, startY: point.y, endX: point.X, endY: point.Y })
                     isConnectionPointClicked = true;
@@ -588,6 +605,7 @@ const CircuitCanvas = forwardRef(({
                 if (element.type === "wire") {
                     // Проверка, попадает ли клик в область провода
                     if (isNearWire(roundedX, roundedY, element.startX, element.startY, element.endX, element.endY, 8)) {
+                        isComponentDragging = true;
                         setIsDragging(true);
                         setDraggedElementIndex(index);
                         setDragOffset({ x: x - element.startX, y: y - element.startY });  // Смещение относительно начальной точки провода
@@ -595,6 +613,7 @@ const CircuitCanvas = forwardRef(({
                     }
                 } else if (x >= element.x - component.width / 2 && x <= element.x + component.width / 2 &&
                 y >= element.y - component.height / 2 && y <= element.y + component.height / 2) {
+                    isComponentDragging = true;
                     setIsDragging(true);
                     setDraggedElementIndex(index);
                     setDragOffset({ x: x - element.x, y: y - element.y });
@@ -602,12 +621,27 @@ const CircuitCanvas = forwardRef(({
                 }
             }
         });
+
+        if (!isComponentDragging && !isWireDrawing) {
+            setIsPanning(true);
+            setPanStart({ x, y });
+        }
     }
 
     function handleMouseMove(e) {
         let { x, y } = getCanvasCoordinates(e);
         x = x - dragOffset.x;
         y = y - dragOffset.y;
+
+        if (isPanning) {
+            const dx = x - panStart.x;
+            const dy = y - panStart.y;
+            setCanvasOffset(prevOffset => ({
+                x: prevOffset.x + dx,
+                y: prevOffset.y + dy
+            }));
+            return;
+        }
 
         let isComponentHovered = false;
         elements.forEach((element, index) => {
@@ -677,6 +711,10 @@ const CircuitCanvas = forwardRef(({
 
     function handleMouseUp() {
         const gridCellSize = 25; // Размер ячейки сетки, по которому производим выравнивание
+
+        if (isPanning) {
+            setIsPanning(false);
+        }
 
         if (isDrawingWire) {            
             // Округление конечных координат к ближайшей ячейке сетки
@@ -793,7 +831,7 @@ const CircuitCanvas = forwardRef(({
     }, [scale, elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
-        isDrawingWire, currentWire
+        isDrawingWire, currentWire, isPanning, panStart, canvasOffset
     ]);
 
     return (
