@@ -26,7 +26,7 @@ class Edge:
         self.current_direction = current_direction
         self.elements = elements
         self.current_strength = None
-        self.voltage_sum, self.resistance_sum = self.calculate_element_contribution()
+        self.voltage_sum, self.resistance_sum, self.current_sum = self.calculate_element_contribution()
 
     # Проверка, является ли ветвь особой
     # Особая ветвь – ветвь с бесконечным сопротивлением
@@ -38,14 +38,17 @@ class Edge:
         return is_specific
     
     def calculate_element_contribution(self):
-        voltage_sum, resistance_sum = 0, 0
+        voltage_sum, resistance_sum, current_sum = 0, 0, 0
         for element in self.elements:
             if isinstance(element, Resistor):
                 resistance_sum += element.resistance
             elif isinstance(element, VoltageSource):
                 voltage_sum += element.voltage if element.direction.start_node == self.current_direction.start_node.label \
                     else -element.voltage
-        return voltage_sum, resistance_sum
+            elif isinstance(element, CurrentSource):
+                current_sum += element.current if element.direction.start_node == self.current_direction.start_node.label \
+                else -element.current
+        return voltage_sum, resistance_sum, current_sum
     
     def form_phi_equation(self, n):
         phi, c = np.zeros(n), 0
@@ -55,7 +58,7 @@ class Edge:
         denominator = 1 if denominator == 0 else denominator
         phi[start_node_index] += 1 / denominator
         phi[end_node_index] -= 1 / denominator
-        c += numerator / denominator
+        c += numerator / denominator + self.current_sum
         return phi, c
 
     def calculate_current_strength(self):
@@ -64,9 +67,9 @@ class Edge:
         numerator += self.voltage_sum
         denominator += self.resistance_sum
         if denominator != 0:
-            current_strength = numerator / denominator
+            current_strength = numerator / denominator + self.current_sum
         else:
-            current_strength = 0
+            current_strength = 0 + self.current_sum
             for _, edge in self.current_direction.end_node.children:
                 if edge is not self:
                     if edge.current_strength is None:
