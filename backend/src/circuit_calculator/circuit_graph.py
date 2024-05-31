@@ -62,10 +62,14 @@ class Edge:
         return phi, c
 
     def calculate_current_strength(self):
+        if self.current_strength is not None:
+            return
+        
         numerator = self.current_direction.start_node.potential - self.current_direction.end_node.potential
         denominator = 0
         numerator += self.voltage_sum
         denominator += self.resistance_sum
+
         if denominator != 0:
             current_strength = numerator / denominator + self.current_sum
         else:
@@ -170,13 +174,8 @@ class CircuitGraph:
                     if edge in visited_edges:
                         is_calc_second_potential_found = True
                         phi, c = edge.form_phi_equation(n)
-                        if edge.current_direction.end_node.label == node.label:
-                            A[node.index] += phi
-                            b[node.index] -= c
-                        else:
-                            A[node.index] -= phi
-                            b[node.index] += c
-                        break
+                        A[node.index] += phi
+                        b[node.index] -= c
             if not is_calc_second_potential_found:
                 for _, edge in node.children:
                     if edge not in specific_edges:
@@ -204,7 +203,7 @@ class CircuitGraph:
                     else edge.current_direction.start_node
                 phi, c = self.find_current_in_specific(other_node, specific_edges, edge)
             if edge is not little_edge:
-                if edge.current_direction.start_node.label == little_edge.current_direction.start_node.label:
+                if edge.current_direction.end_node.label == node.label:
                     phis -= phi
                     cs -= c
                 else:

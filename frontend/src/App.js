@@ -43,6 +43,7 @@ function App() {
             if (data.calculation_result.branch_currents && data.calculation_result.branch_currents) {
                 updateWireCurrents(data.calculation_result.branch_currents);
             }
+            console.log(data);
         };
 
         ws.onerror = (error) => {
