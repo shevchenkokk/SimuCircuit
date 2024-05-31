@@ -59,7 +59,7 @@ const CircuitCanvas = forwardRef(({
 
         context.strokeStyle = 'turquoise';
         context.lineWidth = 1.5;
-        context.strokeRect(1.5, 1.5, context.canvas.width - 3, context.canvas.height - 3);
+        context.strokeRect(-1.5, -1.5, context.canvas.width + 1.5, context.canvas.height + 1.5);
     }
 
     function getOrLoadImage(src, callback) {
@@ -128,7 +128,7 @@ const CircuitCanvas = forwardRef(({
             drawWireConnectionPoints(context, wire.endX, wire.endY);
         }
 
-        if (wire.current) {
+        if (wire.current !== undefined) {
             const dx = Math.abs(wire.endX - wire.startX);
             const dy = Math.abs(wire.endY - wire.startY);
             const angle = Math.atan2(dy, dx) * 180 / Math.PI;
@@ -391,35 +391,36 @@ const CircuitCanvas = forwardRef(({
                     connections[currentNode].forEach(neighbor => {
                         if (!visited.has(neighbor.node)) {
                             if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
+                                let elementCopy = JSON.parse(JSON.stringify(neighbor.element));
                                 if (neighbor.element.type === 'voltageSource' || neighbor.element.type === 'currentSource') {
                                     // Определение направления источника
                                     if (neighbor.element.rotation === 0) {
-                                        if (currentNode.split('_')[0] < endNode.split('_')[0]) {
-                                            neighbor.element.direction = { from: startNode, to: endNode }
+                                        if (currentNode.split('_')[0] < neighbor.node.split('_')[0]) {
+                                            elementCopy.direction = { from: startNode, to: endNode }
                                         } else {
-                                            neighbor.element.direction = { from: endNode, to: startNode }
-                                        }
+                                            elementCopy.direction = { from: endNode, to: startNode }
+                                        }   
                                     } else if (neighbor.element.rotation === 90) {
-                                        if ((currentNode.split('_')[1] < endNode.split('_')[1])) {
-                                            neighbor.element.direction = {from: endNode, to: startNode }
+                                        if (currentNode.split('_')[1] < neighbor.node.split('_')[1]) {
+                                            elementCopy.direction = {from: startNode, to: endNode }
                                         } else {
-                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                            elementCopy.direction = {from: endNode, to: startNode }
                                         }
                                     } else if (neighbor.element.rotation === 180) {
-                                        if ((currentNode.split('_')[0] < endNode.split('_')[0])) {
-                                            neighbor.element.direction = {from: endNode, to: startNode }
+                                        if (currentNode.split('_')[0] < neighbor.node.split('_')[0]) {
+                                            elementCopy.direction = {from: endNode, to: startNode }
                                         } else {
-                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                            elementCopy.direction = {from: startNode, to: endNode }
                                         }
                                     } else if (neighbor.element.rotation === 270) {
-                                        if ((currentNode.split('_')[1] < endNode.split('_')[1])) {
-                                            neighbor.element.direction = {from: startNode, to: endNode }
+                                        if (currentNode.split('_')[1] < neighbor.node.split('_')[1]) {
+                                            elementCopy.direction = {from: endNode, to: startNode }
                                         } else {
-                                           neighbor.element.direction = {from: endNode, to: startNode }
+                                            elementCopy.direction = {from: startNode, to: endNode }
                                         }
                                     }
                                 }
-                                currentPath.push(neighbor.element);
+                                currentPath.push(elementCopy);
                                 dfs(neighbor.node, currentPath);
                                 currentPath.pop();
                             }
