@@ -100,8 +100,10 @@ class Edge:
 
     
 class CircuitGraph:
-    def __init__(self):
+    def __init__(self, elements=None):
         self.nodes = {}
+        if elements:
+            self.elements = elements
         self.num_nodes = 0
         self.num_edges = 0
 
@@ -341,6 +343,11 @@ class CircuitGraph:
         for edge in visited:
             print(str(edge))
 
+    def solve_circuit_using_ohm_law(self):
+        resistance_sum = sum(element.resistance for element in self.elements if isinstance(element, Resistor))
+        voltage_sum = sum(element.voltage for element in self.elements if isinstance(element, VoltageSource))
+        return voltage_sum / resistance_sum
+
     def solve_circuit_using_mna(self):
         A, b = self.form_phi_equations()
         print(f'A: {A}')
@@ -375,7 +382,7 @@ class CircuitGraph:
         # частный случай – один контур => закон Ома
         loop_count = self.num_edges - self.num_nodes + 1
         if loop_count == 1:
-            self.solve_circuit_using_ohm_law()
+            current = self.solve_circuit_using_ohm_law()
             analyzing_method = "Ohm's law" 
         elif self.num_nodes < self.num_edges - self.num_nodes + 1:
             self.solve_circuit_using_mna()
@@ -388,8 +395,9 @@ class CircuitGraph:
         if analyzing_method == "Ohm's law":
             result = {
                 'method': "Ohm's law",
-                'branch_currents': []
+                'current': current
             }
+            return result
         elif analyzing_method == 'modified nodal analysis':
             result = {
                 'method': 'modified nodal analysis',

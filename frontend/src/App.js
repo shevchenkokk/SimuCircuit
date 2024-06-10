@@ -45,10 +45,21 @@ function App() {
 
         ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            if (data.calculation_result.branch_currents && data.calculation_result.branch_currents) {
+            if (data.calculation_result.current) {
+                setElements(prevElements => prevElements.map(element => {
+                    if (element.type === 'wire') {
+                        return {
+                            ...element,
+                            current: data.calculation_result.current,
+                        };
+                    }
+                    return element;
+                }));
+            }
+            if (data.calculation_result.branch_currents) {
                 updateWireCurrents(data.calculation_result.branch_currents);
             }
-            console.log(data);
+            console.log("Calculation result: ", data);
         };
 
         ws.onerror = (error) => {
@@ -120,18 +131,34 @@ function App() {
 
     const handleStartSimulation = () => {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
-        
-        const { nodes, edges, newNodeToIdMap, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
 
-        const formattedCircuitGraph = { nodes, edges };
-        
-        setCircuitGraph(formattedCircuitGraph);
-        setNodeToIdMap(newNodeToIdMap);
-        setWireToEdgeMap(newWireToEdgeMap);
+        if (newCircuitGraph.nodes.length === 0) {
+            const simpleCircuitData = {
+                'elements': elements.map(element =>  ({
+                    type: element.type,
+                    value: element.type === 'resistor' ? element.resistance
+                    : element.type === 'voltageSource' ? element.voltage
+                    : element.current
+                }))
+            }
 
-        // Отправка информации об электрической цепи WebSocket-серверу
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(formattedCircuitGraph));
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(simpleCircuitData));
+            }
+            console.log("Circuit for simulation: ", simpleCircuitData);
+        } else {
+            const { nodes, edges, newNodeToIdMap, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
+
+            const formattedCircuitGraph = { nodes, edges };
+            
+            setCircuitGraph(formattedCircuitGraph);
+            setNodeToIdMap(newNodeToIdMap);
+            setWireToEdgeMap(newWireToEdgeMap);
+
+            // Отправка информации об электрической цепи WebSocket-серверу
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(formattedCircuitGraph));
+            }
         }
     };
 
@@ -167,7 +194,7 @@ function App() {
 
     useEffect(() => {
         if (circuitGraph) {
-            console.log("Formatted circuit for simulation: ", circuitGraph);
+            console.log("Circuit for simulation: ", circuitGraph);
         }
         nodeToIdMapRef.current = nodeToIdMap
         wireToEdgeMapRef.current = wireToEdgeMap

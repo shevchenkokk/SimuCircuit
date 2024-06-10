@@ -144,11 +144,11 @@ const CircuitCanvas = forwardRef(({
     }
 
     function drawWireTextAndDirection(context, wire) {
+        const dx = Math.abs(wire.endX - wire.startX);
+        const dy = Math.abs(wire.endY - wire.startY);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        
         if (wire.current !== undefined) {
-            const dx = Math.abs(wire.endX - wire.startX);
-            const dy = Math.abs(wire.endY - wire.startY);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
             context.save();
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
             context.rotate(Math.atan2(dy, dx));
@@ -171,11 +171,13 @@ const CircuitCanvas = forwardRef(({
             context.strokeText(text, textX, textY);
             context.fillText(text, textX, textY);
             context.restore();
+        }
 
+        if (wire.from !== undefined && wire.to !== undefined) {
             context.save();
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
             context.rotate(Math.atan2(dy, dx));
-            
+
             // Рисование стрелок, отвечающих за направление тока
             const [, fromPoint] = wire.from.split('.');
             const fromPointWire = wire.startX + '_' + wire.startY;
