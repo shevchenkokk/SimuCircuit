@@ -6,6 +6,7 @@ import CircuitCanvas from './components/CircuitCanvas';
 import Sidebar from './components/Sidebar';
 import ControlPanel from './components/ControlPanel';
 import logoImage from './assets/images/logo.svg';
+import fileImage from './assets/images/file.png';
 
 import { formatCircuitGraphForServer } from './utils/CircuitUtils';
 
@@ -25,6 +26,7 @@ function App() {
     // Состояние для хранения информации о проводах и ветвях, которым они принадлежат
     const [wireToEdgeMap, setWireToEdgeMap] = useState(null);
 
+    const fileInputRef = useRef(null); // Ссыкла на input файла
     const nodeToIdMapRef = useRef(null);
     const wireToEdgeMapRef = useRef(null);
 
@@ -133,6 +135,36 @@ function App() {
         }
     };
 
+    const handleExport = () => {
+        const dataStr = JSON.stringify(elements);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileName = 'circuit_data.json';
+    
+        let linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileName);
+        linkElement.click();
+    }
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+    
+        if (file) {
+            const reader = new FileReader();
+    
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    setElements(json); // Обновление состояния элементов
+                } catch (error) {
+                    console.error("Error parsing JSON!", error);
+                }
+            };
+    
+            reader.readAsText(file);
+        }
+    }
+
     useEffect(() => {
         if (circuitGraph) {
             console.log("Formatted circuit for simulation: ", circuitGraph);
@@ -143,9 +175,22 @@ function App() {
 
     return (
         <div className="app">
+            <input type="file" onChange={handleImport} style={{ display: 'none' }} ref={fileInputRef} />
             <header className="app-header">
+            <div className="file-menu">
+                <button data-title="Файл" className="file-menu-btn">
+                    <img src={fileImage} alt="Файл" />
+                </button>
+                <div className="dropdown-content">
+                    <a href="#" onClick={() => fileInputRef.current && fileInputRef.current.click()}>Импорт</a>
+                    <a href="#" onClick={handleExport}>Экспорт</a>
+                </div>
+            </div>
+            <div className="app-logo-and-title">
                 <h1>SimuCircuit</h1>
                 <img src={logoImage} alt="Логотип" className="app-logo" /> {/* Класс для стилизации */}
+            </div>
+            <div className="right-spacer"></div>
             </header>
             <div className="app-content">
                 <Sidebar onSelectComponent={setSelectedComponentFromSidebar} />
