@@ -413,8 +413,8 @@ class CircuitGraph:
 
                     branch_current = {
                         'id': int(edge.label),
-                        'from': edge.current_direction.start_node.label,
-                        'to': edge.current_direction.end_node.label,
+                        'from': int(edge.current_direction.start_node.label),
+                        'to': int(edge.current_direction.end_node.label),
                         'current': edge.current_strength
                     }
                     result['branch_currents'].append(branch_current)

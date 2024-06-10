@@ -20,9 +20,12 @@ function App() {
     const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
     // Состояние для хранения информации о графе электрической цепи, построенной пользователем
     const [circuitGraph, setCircuitGraph] = useState(null);
+    // Состояние для хранения информации об узлах и их идентификаторах
+    const [nodeToIdMap, setNodeToIdMap] = useState(null);
     // Состояние для хранения информации о проводах и ветвях, которым они принадлежат
     const [wireToEdgeMap, setWireToEdgeMap] = useState(null);
 
+    const nodeToIdMapRef = useRef(null);
     const wireToEdgeMapRef = useRef(null);
 
     // Ссылка на CircuitCanvas
@@ -83,10 +86,30 @@ function App() {
     const updateWireCurrents = (branchCurrents) => {
         setElements(prevElements => prevElements.map(element => {
             if (element.type === 'wire') {
+                const nodeIdFrom = nodeToIdMapRef.current[element.from.split('.')[0]]
+                const nodeIdTo = nodeToIdMapRef.current[element.to.split('.')[0]]
                 const wireEdgeId = wireToEdgeMapRef.current[element.id];
                 const branchCurrent = branchCurrents.find(bc => bc.id === wireEdgeId);
                 if (branchCurrent) {
-                    return { ...element, current: branchCurrent.current };
+                    const isDirectionMatch = nodeIdFrom === branchCurrent.from && nodeIdTo === branchCurrent.to;
+
+                    let [fromNode, fromPoint] = element.from.split('.');
+                    let [toNode, toPoint] = element.to.split('.');
+
+                    if (!isDirectionMatch) {
+                        [fromNode, toNode] = [toNode, fromNode];
+                        [fromPoint, toPoint] = [toPoint, fromPoint];
+                    }
+
+                    const newFrom = `${fromNode}.${fromPoint}`;
+                    const newTo = `${toNode}.${toPoint}`;
+
+                    return {
+                        ...element,
+                        current: branchCurrent.current,
+                        from: newFrom,
+                        to: newTo
+                    };
                 }
             }
             return element;
@@ -96,11 +119,12 @@ function App() {
     const handleStartSimulation = () => {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
         
-        const { nodes, edges, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
+        const { nodes, edges, newNodeToIdMap, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
 
         const formattedCircuitGraph = { nodes, edges };
         
         setCircuitGraph(formattedCircuitGraph);
+        setNodeToIdMap(newNodeToIdMap);
         setWireToEdgeMap(newWireToEdgeMap);
 
         // Отправка информации об электрической цепи WebSocket-серверу
@@ -113,8 +137,9 @@ function App() {
         if (circuitGraph) {
             console.log("Formatted circuit for simulation: ", circuitGraph);
         }
+        nodeToIdMapRef.current = nodeToIdMap
         wireToEdgeMapRef.current = wireToEdgeMap
-    }, [circuitGraph, wireToEdgeMap]);
+    }, [circuitGraph, nodeToIdMap, wireToEdgeMap]);
 
     return (
         <div className="app">

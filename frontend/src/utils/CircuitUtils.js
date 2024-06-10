@@ -60,6 +60,7 @@ export function formatCircuitGraphForServer(circuitGraph) {
     return {
         nodes: formattedNodes,
         edges: formattedEdges,
+        newNodeToIdMap: Object.fromEntries(nodeToIdMap),
         newWireToEdgeMap: Object.fromEntries(wireToEdgeMap)
     }
 }
