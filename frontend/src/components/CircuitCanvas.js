@@ -76,7 +76,7 @@ const CircuitCanvas = forwardRef(({
     }
 
     // Рисование элемента
-    function drawComponent(context, component, x, y, opacity=1, rotation=0, isHovered=false, isSelected=false, type=null, value=null) {
+    function drawComponent(context, component, x, y, opacity=1, rotation=0, isSelected=false, type=null, value=null) {
         getOrLoadImage(component.image, (img) => {
             context.save();
             context.globalAlpha = opacity;
@@ -98,13 +98,18 @@ const CircuitCanvas = forwardRef(({
                 context.font = "12px Arial";
                 context.fillStyle = "turquoise";
                 context.textAlign = "center";
-                context.fillText(formattedValue, 0, -component.height / 2 + 20);  // Отрисовка над элементом
+                context.lineWidth = 1;
+                context.strokeStyle = '#003300';
+                if (type === "resistor") {
+                    context.strokeText(formattedValue, 0, -component.height / 2 + 30);
+                    context.fillText(formattedValue, 0, -component.height / 2 + 30);  // Отрисовка над элементом
+                } else {
+                    context.strokeText(formattedValue, 0, -component.height / 2 + 20);
+                    context.fillText(formattedValue, 0, -component.height / 2 + 20);  // Отрисовка над элементом
+                }
                 context.restore();
             }
 
-            if (isHovered) {
-                drawConnectionPoints(context, {x, y, width: component.width, height: component.height, rotation})
-            }
             if (isSelected) {                
                 context.strokeStyle = 'turquoise'; // Выделение компоненты красным цветом при нажатии
                 context.lineWidth = 2;
@@ -115,24 +120,35 @@ const CircuitCanvas = forwardRef(({
     }
 
     // Рисование провода
-    function drawWire(context, wire, isHovered=false, isSelected=false) {
+    function drawWire(context, wire, isSelected=false) {
         context.beginPath();
         context.moveTo(wire.startX, wire.startY);
         context.lineTo(wire.endX, wire.endY);
         context.strokeStyle = isSelected ? 'turquoise' : 'white';
         context.lineWidth = 3;
         context.stroke();
+    }
 
-        if (isHovered) {
-            drawWireConnectionPoints(context, wire.startX, wire.startY);
-            drawWireConnectionPoints(context, wire.endX, wire.endY);
-        }
+    function drawWireConnectionPoints(context, x, y) {
+        context.save();
+        context.beginPath();
+        context.arc(x, y, 4.5, 0, 2 * Math.PI);
+        context.fillStyle = 'turquoise';
+        context.fill();
+        context.shadowColor = 'rgba(0, 0, 0, 0.5)';
+        context.shadowBlur = 5;
+        context.strokeStyle = 'white';
+        context.lineWidth = 1;
+        context.stroke();
+        context.restore();
+    }
 
+    function drawWireTextAndDirection(context, wire) {
+        const dx = Math.abs(wire.endX - wire.startX);
+        const dy = Math.abs(wire.endY - wire.startY);
+        const angle = Math.atan2(dy, dx) * 180 / Math.PI;
+        
         if (wire.current !== undefined) {
-            const dx = Math.abs(wire.endX - wire.startX);
-            const dy = Math.abs(wire.endY - wire.startY);
-            const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-
             context.save();
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
             context.rotate(Math.atan2(dy, dx));
@@ -145,25 +161,48 @@ const CircuitCanvas = forwardRef(({
                 context.rotate(Math.PI); // Переворачиваем текст, чтобы он оставался наверху
                 textY = 10;
             }
-
+            
+            const text = `${wire.current.toFixed(2)} A`;
             context.fillStyle = 'turquoise';
             context.font = '12px Arial';
             context.textAlign = "center";
-            context.fillText(`${wire.current.toFixed(2)} A`, textX, textY);
+            context.lineWidth = 1;
+            context.strokeStyle = '#003300';
+            context.strokeText(text, textX, textY);
+            context.fillText(text, textX, textY);
             context.restore();
         }
-    }
 
-    function drawWireConnectionPoints(context, x, y) {
-        context.beginPath();
-        context.arc(x, y, 4, 0, 2 * Math.PI);
-        context.fillStyle = 'turquoise';
-        context.fill();
-        context.shadowColor = 'rgba(0, 0, 0, 0.5)';
-        context.shadowBlur = 5;
-        context.strokeStyle = 'white';
-        context.lineWidth = 1;
-        context.stroke();
+        if (wire.from !== undefined && wire.to !== undefined) {
+            context.save();
+            context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
+            context.rotate(Math.atan2(dy, dx));
+
+            // Рисование стрелок, отвечающих за направление тока
+            const [, fromPoint] = wire.from.split('.');
+            const fromPointWire = wire.startX + '_' + wire.startY;
+            const startFrom = fromPoint === fromPointWire
+            
+            if (wire.startX > wire.endX || (wire.startX === wire.endX && wire.startY > wire.endY)) {
+                context.rotate(Math.PI);
+            }
+
+            if (!startFrom) {
+                context.rotate(Math.PI);
+            }
+
+            context.beginPath();
+            context.moveTo(5, 0);
+            context.lineTo(-5, 5);
+            context.lineTo(-5, -5);
+            context.closePath();
+            context.fillStyle = 'turquoise';
+            context.fill();
+            context.lineWidth = 1.5;
+            context.strokeStyle = '#003300';
+            context.stroke();
+            context.restore();
+        }
     }
 
     // Функция для проверки близости точки к отрезку, учитывая порог eps
@@ -281,6 +320,7 @@ const CircuitCanvas = forwardRef(({
 
     // Рисование соединительных точек элемента
     function drawConnectionPoints(context, element) {
+        context.save();
         // Левая точка
         const points = [
             {
@@ -293,7 +333,7 @@ const CircuitCanvas = forwardRef(({
 
         points.forEach(point => {
             context.beginPath();
-            context.arc(point.x, point.y, 5, 0, 2 * Math.PI);
+            context.arc(point.x, point.y, 4.5, 0, 2 * Math.PI);
             context.fillStyle = 'turquoise';
             context.fill();
             context.shadowColor = 'rgba(0, 0, 0, 0.5)';
@@ -302,6 +342,7 @@ const CircuitCanvas = forwardRef(({
             context.lineWidth = 1;
             context.stroke();
         });
+        context.restore();
     }
 
     // Рисование узлов – точек, в которых сходятся не менее трёх проводников
@@ -391,13 +432,17 @@ const CircuitCanvas = forwardRef(({
                     connections[currentNode].forEach(neighbor => {
                         if (!visited.has(neighbor.node)) {
                             if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
+                                if (neighbor.element.type === 'wire') {
+                                    neighbor.element.from = startNode + '.' + currentNode
+                                    neighbor.element.to = endNode + '.' + neighbor.node
+                                }
                                 let elementCopy = JSON.parse(JSON.stringify(neighbor.element));
                                 if (neighbor.element.type === 'voltageSource' || neighbor.element.type === 'currentSource') {
                                     // Определение направления источника
                                     if (neighbor.element.rotation === 0) {
                                         if (currentNode.split('_')[0] < neighbor.node.split('_')[0]) {
                                             elementCopy.direction = { from: startNode, to: endNode }
-                                        } else {
+                                        } else {    
                                             elementCopy.direction = { from: endNode, to: startNode }
                                         }   
                                     } else if (neighbor.element.rotation === 90) {
@@ -493,11 +538,32 @@ const CircuitCanvas = forwardRef(({
         }
         elements.forEach((element, index) => {
             if (element.type === 'wire') {
-                drawWire(context, element, index === hoveredComponentIndex, index === selectedComponentIndex)
+                drawWire(context, element, index === selectedComponentIndex)
             } else {
                 const component = componentsList[element.type];
                 drawComponent(context, component, element.x, element.y, 1, element.rotation,
-                    index === hoveredComponentIndex, index === selectedComponentIndex, element.type, getElementValue(element));
+                    index === selectedComponentIndex, element.type, getElementValue(element));
+            }
+        });
+        if (hoveredComponentIndex !== null) {
+            const element = elements[hoveredComponentIndex];
+            if (element.type === 'wire') {
+                drawWireConnectionPoints(context, element.startX, element.startY);
+                drawWireConnectionPoints(context, element.endX, element.endY);
+            } else {
+                const component = componentsList[element.type];
+                context.save();
+                context.translate(element.x, element.y);
+                context.rotate((element.rotation * Math.PI) / 180);
+                drawConnectionPoints(context, {
+                    x: element.x, y: element.y, width: component.width, height: component.height, rotation: element.rotation
+                })
+                context.restore();
+            }
+        }
+        elements.forEach((element) => {
+            if (element.type === 'wire' && element.current !== undefined) {
+                drawWireTextAndDirection(context, element)
             }
         });
         if (preview) {
@@ -806,6 +872,7 @@ const CircuitCanvas = forwardRef(({
         if (e.key === 'Backspace' || e.key === 'Delete') {
             if (selectedComponentIndex !== null) {
                 setElements(prevElements => prevElements.filter((_, index) => index !== selectedComponentIndex));
+                setHoveredComponentIndex(null);
                 setSelectedComponentIndex(null); // Сбросить индекс выбранного элемента
             }
         }
@@ -836,7 +903,8 @@ const CircuitCanvas = forwardRef(({
     }, [scale, elements, preview, hoveredComponentIndex,
         selectedComponentFromSidebar, selectedComponentIndex,
         isDragging, draggedElementIndex, dragOffset,
-        isDrawingWire, currentWire, isPanning, panStart, canvasOffset
+        isDrawingWire, currentWire, isPanning, panStart, canvasOffset,
+        handleResize
     ]);
 
     return (

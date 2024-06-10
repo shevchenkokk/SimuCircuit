@@ -1,67 +1,175 @@
 html, body {
-  margin: 0;
-  padding: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
+	margin: 0;
+	padding: 0;
+	width: 100%;
+	height: 100%;
+	overflow: hidden;
 }
 
 .app {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
-  margin: 0;
+	display: flex;
+	flex-direction: column;
+	height: 100vh;
+	margin: 0;
 }
 
 .app-content {
-  display: flex;
-  height: 100%; /* Занимает все доступное вертикальное пространство */
-  flex-grow: 1;
+	display: flex;
+	height: 100%; /* Занимает все доступное вертикальное пространство */
+	flex-grow: 1;
 }
 
 .app-header {
-  text-align: center;
-  background: linear-gradient(90deg, rgba(12,12,12,1) 0%, rgba(33,33,33,1) 50%, rgba(12,12,12,1) 100%); /* Градиент от темно-серого к более светлому и обратно */
-  display: flex;
-  padding: 2px 0; /* Добавляем немного вертикального пространства */
-  align-items: center; /* Центрируем содержимое по вертикали */
-  justify-content: center; /* Центрируем содержимое по горизонтали */
-  font-size: 10px; /* Немного увеличиваем шрифт для лучшей читаемости */
-  color: white;
-  z-index: 10;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая линия для визуального отделения заголовка от контента */
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Легкая тень для создания "плавающего" эффекта */
+	background: linear-gradient(90deg, rgba(12,12,12,1) 0%, rgba(33,33,33,1) 50%, rgba(12,12,12,1) 100%); /* Градиент от темно-серого к более светлому и обратно */
+	display: flex;
+	padding: 2px 0; /* Добавляем немного вертикального пространства */
+	align-items: center; /* Центрируем содержимое по вертикали */
+	justify-content: space-between; /* Центрируем содержимое по горизонтали */
+	font-size: 10px; /* Немного увеличиваем шрифт для лучшей читаемости */
+	color: white;
+	z-index: 10;
+	border-bottom: 1px solid rgba(255, 255, 255, 0.2); /* Тонкая линия для визуального отделения заголовка от контента */
+	box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Легкая тень для создания "плавающего" эффекта */
+}
+
+.file-menu {
+	position: relative;
+	display: flex;
+	align-items: center;
+	margin-left: 10px;
+	display: inline-block;
+}
+
+.file-menu button.file-menu-btn img {
+    width: 15px;
+    margin: 15px;
+}
+
+.dropdown-content {
+	display: none;
+	position: absolute;
+	background-color: #333;
+	min-width: 110px;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+	border-radius: 10px;
+	z-index: 1;
+}
+  
+.dropdown-content a {
+	color: black;
+	padding: 12px 16px;
+	text-decoration: none;
+	display: block;
+	font-size: 13px; /* Размер шрифта подсказки */
+	text-align: center;
+	color: #fff;
+	border-radius: 10px;
+	border: 2px solid white;
+	margin: 5px;
+}
+
+.dropdown-content a:hover {
+	transform: scale(1.1); /* Увеличение при наведении */
+}
+
+.dropdown-content a:active {
+    transform: scale(0.9); /* Сжатие при нажатии */
+}
+
+.file-menu:hover .dropdown-content {
+  display: block;
+}
+
+.file-menu button {
+	background: none;
+	border: 2px solid white;
+	border-radius: 10px;
+	padding: 5px;
+	width: 100px;
+	height: 25px;
+	margin: 5px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.3s, transform 0.3s;
+	cursor: pointer;
+}
+
+.file-menu button img {
+    width: 100%;
+    height: auto;
+    display: block;
+}
+
+.file-menu button:hover {
+    background-color: rgba(255, 255, 255, 0.2); /* Светлый фон при наведении */
+    transform: scale(1.1); /* Увеличение при наведении */
+}
+
+.file-menu button:active {
+    transform: scale(0.9); /* Сжатие при нажатии */
+}
+
+.file-menu button:hover::after {
+    content: attr(data-title); /* Отображение значения атрибута data-title */
+    position: absolute; /* Абсолютное позиционирование позволяет позиционировать текст точно */
+    left: 100%; /* Расположение справа от кнопки */
+    top: 50%; /* Расположение по вертикали */
+    transform: translate(0, -50%); /* Центрирование текста по вертикали */
+    white-space: nowrap; /* Текст в одну строку */
+    background-color: #333; /* Фон подсказки */
+    color: #fff; /* Цвет текста подсказки */
+    padding: 5px 8px; /* Отступы внутри подсказки */
+    border-radius: 4px; /* Скругление углов подсказки */
+    font-size: 14px; /* Размер шрифта подсказки */
+    z-index: 1000; /* Убедитесь, что подсказка отображается над другими элементами */
+    margin-left: 8px; /* Дополнительный отступ слева */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2); /* Небольшая тень для подсказки */
+    pointer-events: none; /* Предотвращение взаимодействия с подсказкой */
+}
+
+.app-logo-and-title {
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex: 1; /* Занимает одинаковое пространство как и другие элементы в шапке */
 }
 
 .app-logo {
-  height: 25px;
-  margin-left: 5px;
-  pointer-events: none;
+	height: 25px;
+	margin-left: 5px;
+	pointer-events: none;
+}
+
+.right-spacer {
+	display: flex;
+	align-items: center;
+	margin-right: 105px;
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .app-logo {
-    animation: app-logo-spin infinite 40s linear;
-  }
+	.app-logo {
+		animation: app-logo-spin infinite 40s linear;
+	}
 }
 
 .app-link {
-  color: #61dafb;
+	color: #61dafb;
 }
 
 @keyframes app-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+	from {
+		transform: rotate(0deg);
+	}
+	to {
+		transform: rotate(360deg);
+	}
 }
 
 .main-content {
-  display: flex;
-  flex-direction: column;
-  flex-grow: 1;
-  height: 100%;
+	display: flex;
+	flex-direction: column;
+	flex-grow: 1;
+	height: 100%;
 }
 

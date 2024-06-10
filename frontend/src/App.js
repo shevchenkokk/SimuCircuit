@@ -6,6 +6,7 @@ import CircuitCanvas from './components/CircuitCanvas';
 import Sidebar from './components/Sidebar';
 import ControlPanel from './components/ControlPanel';
 import logoImage from './assets/images/logo.svg';
+import fileImage from './assets/images/file.png';
 
 import { formatCircuitGraphForServer } from './utils/CircuitUtils';
 
@@ -20,9 +21,13 @@ function App() {
     const [selectedComponentIndex, setSelectedComponentIndex] = useState(null);
     // Состояние для хранения информации о графе электрической цепи, построенной пользователем
     const [circuitGraph, setCircuitGraph] = useState(null);
+    // Состояние для хранения информации об узлах и их идентификаторах
+    const [nodeToIdMap, setNodeToIdMap] = useState(null);
     // Состояние для хранения информации о проводах и ветвях, которым они принадлежат
     const [wireToEdgeMap, setWireToEdgeMap] = useState(null);
 
+    const fileInputRef = useRef(null); // Ссыкла на input файла
+    const nodeToIdMapRef = useRef(null);
     const wireToEdgeMapRef = useRef(null);
 
     // Ссылка на CircuitCanvas
@@ -40,10 +45,21 @@ function App() {
 
         ws.onmessage = (e) => {
             const data = JSON.parse(e.data);
-            if (data.calculation_result.branch_currents && data.calculation_result.branch_currents) {
+            if (data.calculation_result.current) {
+                setElements(prevElements => prevElements.map(element => {
+                    if (element.type === 'wire') {
+                        return {
+                            ...element,
+                            current: data.calculation_result.current,
+                        };
+                    }
+                    return element;
+                }));
+            }
+            if (data.calculation_result.branch_currents) {
                 updateWireCurrents(data.calculation_result.branch_currents);
             }
-            console.log(data);
+            console.log("Calculation result: ", data);
         };
 
         ws.onerror = (error) => {
@@ -83,10 +99,30 @@ function App() {
     const updateWireCurrents = (branchCurrents) => {
         setElements(prevElements => prevElements.map(element => {
             if (element.type === 'wire') {
+                const nodeIdFrom = nodeToIdMapRef.current[element.from.split('.')[0]]
+                const nodeIdTo = nodeToIdMapRef.current[element.to.split('.')[0]]
                 const wireEdgeId = wireToEdgeMapRef.current[element.id];
                 const branchCurrent = branchCurrents.find(bc => bc.id === wireEdgeId);
                 if (branchCurrent) {
-                    return { ...element, current: branchCurrent.current };
+                    const isDirectionMatch = nodeIdFrom === branchCurrent.from && nodeIdTo === branchCurrent.to;
+
+                    let [fromNode, fromPoint] = element.from.split('.');
+                    let [toNode, toPoint] = element.to.split('.');
+
+                    if (!isDirectionMatch) {
+                        [fromNode, toNode] = [toNode, fromNode];
+                        [fromPoint, toPoint] = [toPoint, fromPoint];
+                    }
+
+                    const newFrom = `${fromNode}.${fromPoint}`;
+                    const newTo = `${toNode}.${toPoint}`;
+
+                    return {
+                        ...element,
+                        current: branchCurrent.current,
+                        from: newFrom,
+                        to: newTo
+                    };
                 }
             }
             return element;
@@ -95,32 +131,93 @@ function App() {
 
     const handleStartSimulation = () => {
         const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
-        
-        const { nodes, edges, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
 
-        const formattedCircuitGraph = { nodes, edges };
-        
-        setCircuitGraph(formattedCircuitGraph);
-        setWireToEdgeMap(newWireToEdgeMap);
+        if (newCircuitGraph.nodes.length === 0) {
+            const simpleCircuitData = {
+                'elements': elements.map(element =>  ({
+                    type: element.type,
+                    value: element.type === 'resistor' ? element.resistance
+                    : element.type === 'voltageSource' ? element.voltage
+                    : element.current
+                }))
+            }
 
-        // Отправка информации об электрической цепи WebSocket-серверу
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify(formattedCircuitGraph));
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(simpleCircuitData));
+            }
+            console.log("Circuit for simulation: ", simpleCircuitData);
+        } else {
+            const { nodes, edges, newNodeToIdMap, newWireToEdgeMap } = formatCircuitGraphForServer(newCircuitGraph);
+
+            const formattedCircuitGraph = { nodes, edges };
+            
+            setCircuitGraph(formattedCircuitGraph);
+            setNodeToIdMap(newNodeToIdMap);
+            setWireToEdgeMap(newWireToEdgeMap);
+
+            // Отправка информации об электрической цепи WebSocket-серверу
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.send(JSON.stringify(formattedCircuitGraph));
+            }
         }
     };
 
+    const handleExport = () => {
+        const dataStr = JSON.stringify(elements);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileName = 'circuit_data.json';
+    
+        let linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileName);
+        linkElement.click();
+    }
+
+    const handleImport = (e) => {
+        const file = e.target.files[0];
+    
+        if (file) {
+            const reader = new FileReader();
+    
+            reader.onload = (e) => {
+                try {
+                    const json = JSON.parse(e.target.result);
+                    setElements(json); // Обновление состояния элементов
+                } catch (error) {
+                    console.error("Error parsing JSON!", error);
+                }
+            };
+    
+            reader.readAsText(file);
+        }
+    }
+
     useEffect(() => {
         if (circuitGraph) {
-            console.log("Formatted circuit for simulation: ", circuitGraph);
+            console.log("Circuit for simulation: ", circuitGraph);
         }
+        nodeToIdMapRef.current = nodeToIdMap
         wireToEdgeMapRef.current = wireToEdgeMap
-    }, [circuitGraph, wireToEdgeMap]);
+    }, [circuitGraph, nodeToIdMap, wireToEdgeMap]);
 
     return (
         <div className="app">
+            <input type="file" onChange={handleImport} style={{ display: 'none' }} ref={fileInputRef} />
             <header className="app-header">
+            <div className="file-menu">
+                <button data-title="Файл" className="file-menu-btn">
+                    <img src={fileImage} alt="Файл" />
+                </button>
+                <div className="dropdown-content">
+                    <a href="#" onClick={() => fileInputRef.current && fileInputRef.current.click()}>Импорт</a>
+                    <a href="#" onClick={handleExport}>Экспорт</a>
+                </div>
+            </div>
+            <div className="app-logo-and-title">
                 <h1>SimuCircuit</h1>
                 <img src={logoImage} alt="Логотип" className="app-logo" /> {/* Класс для стилизации */}
+            </div>
+            <div className="right-spacer"></div>
             </header>
             <div className="app-content">
                 <Sidebar onSelectComponent={setSelectedComponentFromSidebar} />
