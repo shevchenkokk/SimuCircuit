@@ -8,6 +8,8 @@ import ControlPanel from './components/ControlPanel';
 import logoImage from './assets/images/logo.svg';
 import fileImage from './assets/images/file.png';
 
+import CircuitErrorModal from './components/CircuitErrorModal';
+
 import { formatCircuitGraphForServer } from './utils/CircuitUtils';
 
 function App() {
@@ -25,6 +27,11 @@ function App() {
     const [nodeToIdMap, setNodeToIdMap] = useState(null);
     // Состояние для хранения информации о проводах и ветвях, которым они принадлежат
     const [wireToEdgeMap, setWireToEdgeMap] = useState(null);
+    // Состояние для хранения информации о факте открытия модального окна
+    // для отображения проблем в структуре собранной цепи
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    // Состояние для хранения информации о сообщении, выводимом в модальном окне
+    const [modalMessage, setModalMessage] = useState("");
 
     const fileInputRef = useRef(null); // Ссыкла на input файла
     const nodeToIdMapRef = useRef(null);
@@ -129,8 +136,47 @@ function App() {
         }));
     };
 
+    const analyzeCircuitGraph = (newCircuitGraph, connectionCounts) => {
+        const hasPassiveElements = elements.some(element => element.type === 'resistor');
+        if (!hasPassiveElements) {
+            setModalMessage('В цепи отсутствуют пассивные элементы')
+            setIsModalOpen(true);
+            return false;
+        }
+
+        const hasActiveElements = elements.some(element => element.type === 'voltageSource' || element.type === 'currentSource');
+        if (!hasActiveElements) {
+            setModalMessage('В цепи отсутствуют активные элементы')
+            setIsModalOpen(true);
+            return false;
+        }
+
+        const singleConnectionPoints = Object.keys(connectionCounts).filter(key => connectionCounts[key].count === 1);
+        if (singleConnectionPoints.length > 0) {
+            setModalMessage('Некоторые элементы имеют только одно соединение, что может привести к неправильной работе цепи');
+            setIsModalOpen(true);
+            return false;
+        }
+        
+        let isAllWiresEdgeFound = false;
+        if (newCircuitGraph.nodes !== undefined && newCircuitGraph.edges !== undefined) {
+            for (const edge of newCircuitGraph.edges) {
+                const allWires = edge.elements.every(element => element.type === 'wire');
+                if (allWires) {
+                    setModalMessage('Одна или несколько ветвей содержат только провода, что может привести к короткому замыканию')
+                    setIsModalOpen(true);
+                    isAllWiresEdgeFound = true;
+                }
+            }
+        }
+        if (isAllWiresEdgeFound) return false;
+        return true;
+    }
+
     const handleStartSimulation = () => {
-        const newCircuitGraph = circuitCanvasRef.current.createCircuitGraph();
+        const { newCircuitGraph, connectionCounts } = circuitCanvasRef.current.createCircuitGraph();
+
+        if (!analyzeCircuitGraph(newCircuitGraph, connectionCounts)) return;
 
         if (newCircuitGraph.nodes.length === 0) {
             const simpleCircuitData = {
@@ -160,7 +206,7 @@ function App() {
                 socket.send(JSON.stringify(formattedCircuitGraph));
             }
         }
-    };
+    }
 
     const handleExport = () => {
         const dataStr = JSON.stringify(elements);
@@ -209,8 +255,8 @@ function App() {
                     <img src={fileImage} alt="Файл" />
                 </button>
                 <div className="dropdown-content">
-                    <a href="#" onClick={() => fileInputRef.current && fileInputRef.current.click()}>Импорт</a>
-                    <a href="#" onClick={handleExport}>Экспорт</a>
+                    <button onClick={() => fileInputRef.current && fileInputRef.current.click()}>Импорт</button>
+                    <button onClick={handleExport}>Экспорт</button>
                 </div>
             </div>
             <div className="app-logo-and-title">
@@ -243,6 +289,10 @@ function App() {
                     />
                 </div>
             </div>
+            {isModalOpen && (
+                <CircuitErrorModal onClose={() => setIsModalOpen(false)} message={modalMessage}
+                />
+            )}
         </div>
     );
 }
