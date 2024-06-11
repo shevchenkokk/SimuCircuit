@@ -55,24 +55,27 @@ html, body {
 	z-index: 1;
 }
   
-.dropdown-content a {
-	color: black;
-	padding: 12px 16px;
-	text-decoration: none;
-	display: block;
-	font-size: 13px; /* Размер шрифта подсказки */
-	text-align: center;
-	color: #fff;
-	border-radius: 10px;
+.dropdown-content button {
+	background: none;
 	border: 2px solid white;
+	border-radius: 10px;
+	padding: 5px;
+	width: 100px;
+	height: 25px;
 	margin: 5px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: background-color 0.3s, transform 0.3s;
+	color: #fff;
+	cursor: pointer;
 }
 
-.dropdown-content a:hover {
+.dropdown-content button:hover {
 	transform: scale(1.1); /* Увеличение при наведении */
 }
 
-.dropdown-content a:active {
+.dropdown-content button:active {
     transform: scale(0.9); /* Сжатие при нажатии */
 }
 
@@ -80,7 +83,7 @@ html, body {
   display: block;
 }
 
-.file-menu button {
+.file-menu-btn {
 	background: none;
 	border: 2px solid white;
 	border-radius: 10px;
@@ -95,22 +98,22 @@ html, body {
 	cursor: pointer;
 }
 
-.file-menu button img {
+.file-menu-btn img {
     width: 100%;
     height: auto;
     display: block;
 }
 
-.file-menu button:hover {
+.file-menu-btn:hover {
     background-color: rgba(255, 255, 255, 0.2); /* Светлый фон при наведении */
     transform: scale(1.1); /* Увеличение при наведении */
 }
 
-.file-menu button:active {
+.file-menu-btn:active {
     transform: scale(0.9); /* Сжатие при нажатии */
 }
 
-.file-menu button:hover::after {
+.file-menu-btn:hover::after {
     content: attr(data-title); /* Отображение значения атрибута data-title */
     position: absolute; /* Абсолютное позиционирование позволяет позиционировать текст точно */
     left: 100%; /* Расположение справа от кнопки */

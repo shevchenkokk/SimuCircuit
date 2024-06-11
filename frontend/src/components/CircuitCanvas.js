@@ -147,7 +147,7 @@ const CircuitCanvas = forwardRef(({
         const dx = Math.abs(wire.endX - wire.startX);
         const dy = Math.abs(wire.endY - wire.startY);
         const angle = Math.atan2(dy, dx) * 180 / Math.PI;
-        
+
         if (wire.current !== undefined) {
             context.save();
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
@@ -493,12 +493,12 @@ const CircuitCanvas = forwardRef(({
             }
         }
         
-        const circuitGraph = {
+        const newCircuitGraph = {
             nodes: nodes,
             edges: edges
         };
 
-        return circuitGraph;
+        return { newCircuitGraph, connectionCounts };
     }
 
     // Корректировка координат курсора при масштабировании
