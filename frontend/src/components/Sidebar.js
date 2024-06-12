@@ -5,6 +5,8 @@ import wireImage from '../assets/images/wire.svg';
 import resistorImage from '../assets/images/resistor.svg';
 import voltageSourceImage from '../assets/images/voltage-source.svg';
 import currentSourceImage from '../assets/images/current-source.svg';
+import capacitorImage from '../assets/images/capacitor.svg';
+import inductorImage from '../assets/images/inductor.svg';
 import ammeterImage from '../assets/images/ammeter.svg';
 import voltmeterImage from '../assets/images/voltmeter.svg';
 
@@ -22,6 +24,12 @@ function Sidebar({ onSelectComponent }) {
             </button>
             <button onClick={() => onSelectComponent('currentSource')} data-title="Источник тока">
                 <img src={currentSourceImage} alt="Источник тока" />
+            </button>
+            <button onClick={() => onSelectComponent('capacitor')} data-title="Конденсатор">
+                <img src={capacitorImage} alt="Конденсатор" />
+            </button>
+            <button onClick={() => onSelectComponent('inductor')} data-title="Катушка индуктивности">
+                <img src={inductorImage} alt="Катушка индуктивности" />
             </button>
             <button onClick={() => onSelectComponent('ammeter')} data-title="Амперметр">
                 <img src={ammeterImage} alt="Амперметр" />
