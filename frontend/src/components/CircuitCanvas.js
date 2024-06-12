@@ -178,16 +178,8 @@ const CircuitCanvas = forwardRef(({
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
             context.rotate(Math.atan2(dy, dx));
 
-            // Рисование стрелок, отвечающих за направление тока
-            const [, fromPoint] = wire.from.split('.');
-            const fromPointWire = wire.startX + '_' + wire.startY;
-            const startFrom = fromPoint === fromPointWire
-            
-            if (wire.startX > wire.endX || (wire.startX === wire.endX && wire.startY > wire.endY)) {
-                context.rotate(Math.PI);
-            }
-
-            if (!startFrom) {
+            // Рисование стрелок, отвечающих за направление тока            
+            if (wire.startX > wire.endX || wire.startY > wire.endY) {
                 context.rotate(Math.PI);
             }
 
@@ -416,26 +408,24 @@ const CircuitCanvas = forwardRef(({
         // Поиск всех путей от startNode до endNode со сбором элементов
         function findAllPaths(startNode, endNode, connections) {
             const paths = [];
-            const visited = new Set();
+
+            visited.add(startNode);
 
             // Используем алгоритм обхода графа в глубину
             function dfs(currentNode, currentPath) {
                 if (currentNode === endNode) {
                     // Добавляем копию текущего пути в результат
+                    visited.delete(currentNode);
                     paths.push(currentPath.slice());
-                    return;
+                    return true;
                 }
 
-                visited.add(currentNode);
-
                 if (connections[currentNode]) {
-                    connections[currentNode].forEach(neighbor => {
+                    for (let i = 0; i < connections[currentNode].length; i++) {
+                        let neighbor = connections[currentNode][i];
                         if (!visited.has(neighbor.node)) {
+                            visited.add(neighbor.node);
                             if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
-                                if (neighbor.element.type === 'wire') {
-                                    neighbor.element.from = startNode + '.' + currentNode
-                                    neighbor.element.to = endNode + '.' + neighbor.node
-                                }
                                 let elementCopy = JSON.parse(JSON.stringify(neighbor.element));
                                 if (neighbor.element.type === 'voltageSource' || neighbor.element.type === 'currentSource') {
                                     // Определение направления источника
@@ -466,20 +456,45 @@ const CircuitCanvas = forwardRef(({
                                     }
                                 }
                                 currentPath.push(elementCopy);
-                                dfs(neighbor.node, currentPath);
+                                const isPathFound = dfs(neighbor.node, currentPath);
                                 currentPath.pop();
+                                if (!isPathFound && currentNode !== startNode) {
+                                    visited.delete(neighbor.node);
+                                    return false;
+                                }
+                                if (isPathFound && currentNode !== startNode) {
+                                    if (neighbor.element.type === 'wire') {
+                                        neighbor.element.from = startNode + '.' + currentNode;
+                                        neighbor.element.to = endNode + '.' + neighbor.node;
+                                    }
+                                    return true;
+                                }
+                                if (currentNode == startNode) {
+                                    visited.delete(neighbor.node);
+                                    if (isPathFound) {
+                                        if (neighbor.element.type === 'wire') {
+                                            neighbor.element.from = startNode + '.' + currentNode;
+                                            neighbor.element.to = endNode + '.' + neighbor.node;
+                                        }
+                                    }
+                                }
+                                
+                            } else if (nodesSet.has(neighbor.node)) {
+                                visited.delete(neighbor.node);
+                                return false;
                             }
                         }
-                    });
+                    }
                 }
-
-                visited.delete(currentNode);
+                return false;
             };
 
             dfs(startNode, [])
 
             return paths;
         };
+
+        const visited = new Set();
         
         let edges = [];
         for (let i = 0; i < nodes.length; i++) {

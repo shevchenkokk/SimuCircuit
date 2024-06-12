@@ -126,6 +126,10 @@ function App() {
 
                     return {
                         ...element,
+                        startX: Number(fromPoint.split('_')[0]),
+                        startY: Number(fromPoint.split('_')[1]),
+                        endX: Number(toPoint.split('_')[0]),
+                        endY: Number(toPoint.split('_')[1]),
                         current: branchCurrent.current,
                         from: newFrom,
                         to: newTo
@@ -153,7 +157,8 @@ function App() {
 
         const singleConnectionPoints = Object.keys(connectionCounts).filter(key => connectionCounts[key].count === 1);
         if (singleConnectionPoints.length > 0) {
-            setModalMessage('Некоторые элементы имеют только одно соединение, что может привести к неправильной работе цепи');
+            setModalMessage('Некоторые элементы имеют только одно соединение или не имеют соединений вовсе, \
+                что может привести к неправильной работе цепи');
             setIsModalOpen(true);
             return false;
         }
