@@ -178,16 +178,8 @@ const CircuitCanvas = forwardRef(({
             context.translate((wire.startX + wire.endX) / 2, (wire.startY + wire.endY) / 2);
             context.rotate(Math.atan2(dy, dx));
 
-            // Рисование стрелок, отвечающих за направление тока
-            const [, fromPoint] = wire.from.split('.');
-            const fromPointWire = wire.startX + '_' + wire.startY;
-            const startFrom = fromPoint === fromPointWire
-            
-            if (wire.startX > wire.endX || (wire.startX === wire.endX && wire.startY > wire.endY)) {
-                context.rotate(Math.PI);
-            }
-
-            if (!startFrom) {
+            // Рисование стрелок, отвечающих за направление тока            
+            if (wire.startX > wire.endX || wire.startY > wire.endY) {
                 context.rotate(Math.PI);
             }
 
@@ -416,26 +408,24 @@ const CircuitCanvas = forwardRef(({
         // Поиск всех путей от startNode до endNode со сбором элементов
         function findAllPaths(startNode, endNode, connections) {
             const paths = [];
-            const visited = new Set();
+
+            visited.add(startNode);
 
             // Используем алгоритм обхода графа в глубину
             function dfs(currentNode, currentPath) {
                 if (currentNode === endNode) {
                     // Добавляем копию текущего пути в результат
+                    visited.delete(currentNode);
                     paths.push(currentPath.slice());
-                    return;
+                    return true;
                 }
 
-                visited.add(currentNode);
-
                 if (connections[currentNode]) {
-                    connections[currentNode].forEach(neighbor => {
+                    for (let i = 0; i < connections[currentNode].length; i++) {
+                        let neighbor = connections[currentNode][i];
                         if (!visited.has(neighbor.node)) {
+                            visited.add(neighbor.node);
                             if (!nodesSet.has(neighbor.node) || neighbor.node === endNode) {
-                                if (neighbor.element.type === 'wire') {
-                                    neighbor.element.from = startNode + '.' + currentNode
-                                    neighbor.element.to = endNode + '.' + neighbor.node
-                                }
                                 let elementCopy = JSON.parse(JSON.stringify(neighbor.element));
                                 if (neighbor.element.type === 'voltageSource' || neighbor.element.type === 'currentSource') {
                                     // Определение направления источника
@@ -466,20 +456,45 @@ const CircuitCanvas = forwardRef(({
                                     }
                                 }
                                 currentPath.push(elementCopy);
-                                dfs(neighbor.node, currentPath);
+                                const isPathFound = dfs(neighbor.node, currentPath);
                                 currentPath.pop();
+                                if (!isPathFound && currentNode !== startNode) {
+                                    visited.delete(neighbor.node);
+                                    return false;
+                                }
+                                if (isPathFound && currentNode !== startNode) {
+                                    if (neighbor.element.type === 'wire') {
+                                        neighbor.element.from = startNode + '.' + currentNode;
+                                        neighbor.element.to = endNode + '.' + neighbor.node;
+                                    }
+                                    return true;
+                                }
+                                if (currentNode == startNode) {
+                                    visited.delete(neighbor.node);
+                                    if (isPathFound) {
+                                        if (neighbor.element.type === 'wire') {
+                                            neighbor.element.from = startNode + '.' + currentNode;
+                                            neighbor.element.to = endNode + '.' + neighbor.node;
+                                        }
+                                    }
+                                }
+                                
+                            } else if (nodesSet.has(neighbor.node)) {
+                                visited.delete(neighbor.node);
+                                return false;
                             }
                         }
-                    });
+                    }
                 }
-
-                visited.delete(currentNode);
+                return false;
             };
 
             dfs(startNode, [])
 
             return paths;
         };
+
+        const visited = new Set();
         
         let edges = [];
         for (let i = 0; i < nodes.length; i++) {
@@ -510,68 +525,70 @@ const CircuitCanvas = forwardRef(({
     }
 
     function handleResize() {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const context = canvas.getContext('2d', { alpha: true, antialias: true });
-        context.imageSmoothingEnabled = false;
-        const dpr = window.devicePixelRatio; // Учет плотности пикселей устройства
+        requestAnimationFrame(() => {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const context = canvas.getContext('2d', { alpha: true, antialias: true });
+            context.imageSmoothingEnabled = false;
+            const dpr = window.devicePixelRatio; // Учет плотности пикселей устройства
 
-        // Устанавливаем фактические размеры холста в пикселях
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+            // Устанавливаем фактические размеры холста в пикселях
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
 
-        // Устанавливаем размеры стилей для корректного отображения на странице
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = `${rect.height}px`;
+            // Устанавливаем размеры стилей для корректного отображения на странице
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
 
-        context.scale(dpr * scale, dpr * scale);
+            context.scale(dpr * scale, dpr * scale);
 
-        context.fillStyle = 'black';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        context.save();
-        context.translate(canvasOffset.x, canvasOffset.y);
+            context.fillStyle = 'black';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.save();
+            context.translate(canvasOffset.x, canvasOffset.y);
 
-        drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
-        if (currentWire) {
-            drawWire(context, currentWire); // Рисуем провод
-        }
-        elements.forEach((element, index) => {
-            if (element.type === 'wire') {
-                drawWire(context, element, index === selectedComponentIndex)
-            } else {
-                const component = componentsList[element.type];
-                drawComponent(context, component, element.x, element.y, 1, element.rotation,
-                    index === selectedComponentIndex, element.type, getElementValue(element));
+            drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
+            if (currentWire) {
+                drawWire(context, currentWire); // Рисуем провод
             }
+            elements.forEach((element, index) => {
+                if (element.type === 'wire') {
+                    drawWire(context, element, index === selectedComponentIndex)
+                } else {
+                    const component = componentsList[element.type];
+                    drawComponent(context, component, element.x, element.y, 1, element.rotation,
+                        index === selectedComponentIndex, element.type, getElementValue(element));
+                }
+            });
+            if (hoveredComponentIndex !== null) {
+                const element = elements[hoveredComponentIndex];
+                if (element.type === 'wire') {
+                    drawWireConnectionPoints(context, element.startX, element.startY);
+                    drawWireConnectionPoints(context, element.endX, element.endY);
+                } else {
+                    const component = componentsList[element.type];
+                    context.save();
+                    context.translate(element.x, element.y);
+                    context.rotate((element.rotation * Math.PI) / 180);
+                    drawConnectionPoints(context, {
+                        x: element.x, y: element.y, width: component.width, height: component.height, rotation: element.rotation
+                    })
+                    context.restore();
+                }
+            }
+            elements.forEach((element) => {
+                if (element.type === 'wire' && element.current !== undefined) {
+                    drawWireTextAndDirection(context, element)
+                }
+            });
+            if (preview) {
+                const component = componentsList[preview.type];
+                drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
+            }
+            drawNodes(context);
+            context.restore();
         });
-        if (hoveredComponentIndex !== null) {
-            const element = elements[hoveredComponentIndex];
-            if (element.type === 'wire') {
-                drawWireConnectionPoints(context, element.startX, element.startY);
-                drawWireConnectionPoints(context, element.endX, element.endY);
-            } else {
-                const component = componentsList[element.type];
-                context.save();
-                context.translate(element.x, element.y);
-                context.rotate((element.rotation * Math.PI) / 180);
-                drawConnectionPoints(context, {
-                    x: element.x, y: element.y, width: component.width, height: component.height, rotation: element.rotation
-                })
-                context.restore();
-            }
-        }
-        elements.forEach((element) => {
-            if (element.type === 'wire' && element.current !== undefined) {
-                drawWireTextAndDirection(context, element)
-            }
-        });
-        if (preview) {
-            const component = componentsList[preview.type];
-            drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
-        }
-        drawNodes(context);
-        context.restore();
     }
 
     function handleWheel(e) {
@@ -881,6 +898,7 @@ const CircuitCanvas = forwardRef(({
     useEffect(() => {
         handleResize();
         const canvas = canvasRef.current;
+        
         window.addEventListener('resize', handleResize);
         canvas.addEventListener('wheel', handleWheel);
         canvas.addEventListener('click', handleClick);

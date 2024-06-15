@@ -2,6 +2,8 @@ import wireImage from './assets/images/wire.svg';
 import resistorImage from './assets/images/resistor.svg';
 import voltageSourceImage from './assets/images/voltage-source.svg';
 import currentSourceImage from './assets/images/current-source.svg';
+import capacitorImage from './assets/images/capacitor.svg';
+import inductorImage from './assets/images/inductor.svg';
 import ammeterImage from './assets/images/ammeter.svg';
 import voltmeterImage from './assets/images/voltmeter.svg';
 
@@ -25,6 +27,16 @@ export const componentsList = {
         image: currentSourceImage,
         width: 100,
         height: 100
+    },
+    capacitor: {
+        image: capacitorImage,
+        width: 100,
+        height: 90
+    },
+    inductor: {
+        image: inductorImage,
+        width: 100,
+        height: 95
     },
     ammeter: {
         image: ammeterImage,

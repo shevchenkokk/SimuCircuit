@@ -1,0 +1,12 @@
+<?xml version='1.0' encoding='iso-8859-1'?>
+<svg fill="#FFFFFF" viewBox="0 0 498 498" xmlns="http://www.w3.org/2000/svg" width="498" height="498">
+      <g transform="translate(0, 5)">
+        <path d="M202.53 141H223v204h-20.47v-93.37H105v-17.25h97.53v-93.37z"></path>
+        <path
+          d="M375.53 141H396v204h-20.47v-93.37H278v-17.25h97.53v-93.37z"
+          transform="rotate(180 337 243)"
+        ></path>
+        <path d="M326 234.5H512V251.7H326z"></path>
+        <path d="M0 234.4H186V251.6H0z"></path>
+      </g>
+</svg>
