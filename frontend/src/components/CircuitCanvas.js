@@ -525,68 +525,70 @@ const CircuitCanvas = forwardRef(({
     }
 
     function handleResize() {
-        const canvas = canvasRef.current;
-        const rect = canvas.getBoundingClientRect();
-        const context = canvas.getContext('2d', { alpha: true, antialias: true });
-        context.imageSmoothingEnabled = false;
-        const dpr = window.devicePixelRatio; // Учет плотности пикселей устройства
+        requestAnimationFrame(() => {
+            const canvas = canvasRef.current;
+            const rect = canvas.getBoundingClientRect();
+            const context = canvas.getContext('2d', { alpha: true, antialias: true });
+            context.imageSmoothingEnabled = false;
+            const dpr = window.devicePixelRatio; // Учет плотности пикселей устройства
 
-        // Устанавливаем фактические размеры холста в пикселях
-        canvas.width = rect.width * dpr;
-        canvas.height = rect.height * dpr;
+            // Устанавливаем фактические размеры холста в пикселях
+            canvas.width = rect.width * dpr;
+            canvas.height = rect.height * dpr;
 
-        // Устанавливаем размеры стилей для корректного отображения на странице
-        canvas.style.width = `${rect.width}px`;
-        canvas.style.height = `${rect.height}px`;
+            // Устанавливаем размеры стилей для корректного отображения на странице
+            canvas.style.width = `${rect.width}px`;
+            canvas.style.height = `${rect.height}px`;
 
-        context.scale(dpr * scale, dpr * scale);
+            context.scale(dpr * scale, dpr * scale);
 
-        context.fillStyle = 'black';
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        
-        context.save();
-        context.translate(canvasOffset.x, canvasOffset.y);
+            context.fillStyle = 'black';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            
+            context.save();
+            context.translate(canvasOffset.x, canvasOffset.y);
 
-        drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
-        if (currentWire) {
-            drawWire(context, currentWire); // Рисуем провод
-        }
-        elements.forEach((element, index) => {
-            if (element.type === 'wire') {
-                drawWire(context, element, index === selectedComponentIndex)
-            } else {
-                const component = componentsList[element.type];
-                drawComponent(context, component, element.x, element.y, 1, element.rotation,
-                    index === selectedComponentIndex, element.type, getElementValue(element));
+            drawGrid(context, 'rgba(128, 128, 128, 0.35)', 25, 25);
+            if (currentWire) {
+                drawWire(context, currentWire); // Рисуем провод
             }
+            elements.forEach((element, index) => {
+                if (element.type === 'wire') {
+                    drawWire(context, element, index === selectedComponentIndex)
+                } else {
+                    const component = componentsList[element.type];
+                    drawComponent(context, component, element.x, element.y, 1, element.rotation,
+                        index === selectedComponentIndex, element.type, getElementValue(element));
+                }
+            });
+            if (hoveredComponentIndex !== null) {
+                const element = elements[hoveredComponentIndex];
+                if (element.type === 'wire') {
+                    drawWireConnectionPoints(context, element.startX, element.startY);
+                    drawWireConnectionPoints(context, element.endX, element.endY);
+                } else {
+                    const component = componentsList[element.type];
+                    context.save();
+                    context.translate(element.x, element.y);
+                    context.rotate((element.rotation * Math.PI) / 180);
+                    drawConnectionPoints(context, {
+                        x: element.x, y: element.y, width: component.width, height: component.height, rotation: element.rotation
+                    })
+                    context.restore();
+                }
+            }
+            elements.forEach((element) => {
+                if (element.type === 'wire' && element.current !== undefined) {
+                    drawWireTextAndDirection(context, element)
+                }
+            });
+            if (preview) {
+                const component = componentsList[preview.type];
+                drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
+            }
+            drawNodes(context);
+            context.restore();
         });
-        if (hoveredComponentIndex !== null) {
-            const element = elements[hoveredComponentIndex];
-            if (element.type === 'wire') {
-                drawWireConnectionPoints(context, element.startX, element.startY);
-                drawWireConnectionPoints(context, element.endX, element.endY);
-            } else {
-                const component = componentsList[element.type];
-                context.save();
-                context.translate(element.x, element.y);
-                context.rotate((element.rotation * Math.PI) / 180);
-                drawConnectionPoints(context, {
-                    x: element.x, y: element.y, width: component.width, height: component.height, rotation: element.rotation
-                })
-                context.restore();
-            }
-        }
-        elements.forEach((element) => {
-            if (element.type === 'wire' && element.current !== undefined) {
-                drawWireTextAndDirection(context, element)
-            }
-        });
-        if (preview) {
-            const component = componentsList[preview.type];
-            drawComponent(context, component, preview.x, preview.y, 0.5, preview.rotation);
-        }
-        drawNodes(context);
-        context.restore();
     }
 
     function handleWheel(e) {
@@ -896,6 +898,7 @@ const CircuitCanvas = forwardRef(({
     useEffect(() => {
         handleResize();
         const canvas = canvasRef.current;
+        
         window.addEventListener('resize', handleResize);
         canvas.addEventListener('wheel', handleWheel);
         canvas.addEventListener('click', handleClick);
