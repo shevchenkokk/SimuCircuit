@@ -469,7 +469,7 @@ const CircuitCanvas = forwardRef(({
                                     }
                                     return true;
                                 }
-                                if (currentNode == startNode) {
+                                if (currentNode === startNode) {
                                     visited.delete(neighbor.node);
                                     if (isPathFound) {
                                         if (neighbor.element.type === 'wire') {

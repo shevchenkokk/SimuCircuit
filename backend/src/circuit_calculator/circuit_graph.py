@@ -4,9 +4,14 @@ from .components import (
     Resistor,
     VoltageSource,
     CurrentSource,
-    Direction
 )
 from .utils import LU_decomposition, solve_LU
+
+class Direction:
+    def __init__(self, start_node, end_node):
+        self.start_node = start_node
+        self.end_node = end_node
+
 
 class Node:
     def __init__(self, label):
