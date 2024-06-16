@@ -1,9 +1,12 @@
-from .circuit_graph import CircuitGraph
+from .circuit_graph import (
+    Direction,
+    CircuitGraph
+)
+
 from .components import (
     Resistor,
     VoltageSource,
     CurrentSource,
-    Direction
 )
 
 def add_elements(graph_elements):

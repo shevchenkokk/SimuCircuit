@@ -157,8 +157,9 @@ function App() {
 
         const singleConnectionPoints = Object.keys(connectionCounts).filter(key => connectionCounts[key].count === 1);
         if (singleConnectionPoints.length > 0) {
-            setModalMessage('Некоторые элементы имеют только одно соединение или не имеют соединений вовсе, \
-                что может привести к неправильной работе цепи');
+            setModalMessage(
+                'Некоторые элементы имеют только одно соединение или не имеют соединений вовсе, что может привести к неправильной работе цепи'
+            );
             setIsModalOpen(true);
             return false;
         }
